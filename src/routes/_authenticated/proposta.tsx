@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { Plus, Trash2, Upload, Save, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { Btn, Card, Field, Input, Mono, PageHeader, Select, Td, Th } from "@/components/kit";
+import { Btn, Card, Field, Input, Mono, PageHeader, Select } from "@/components/kit";
+import { ParcelasTable } from "@/components/ParcelasTable";
 import { getState, setState, useStore, type Proposta, type Status } from "@/lib/store";
 import { TIPOS_PARCELA, type TipoParcela } from "@/lib/rateio";
 import { brl, pct, uid } from "@/lib/format";
@@ -220,22 +221,9 @@ function Ficha() {
               })}
             </div>
           </Card>
-          <Card title="Série de parcelas" action={<Btn variant="ghost" onClick={() => up({ parcelas: [...p.parcelas, { id: uid(), tipo: "Mensal", valor: 0, vencimento: new Date().toISOString().slice(0, 10) }] })}><Plus className="h-4 w-4" />Parcela</Btn>}>
-            <div className="overflow-x-auto"><table className="w-full"><thead><tr><Th>Tipo</Th><Th>Valor</Th><Th>Vencimento</Th><Th>% VGV</Th><Th /></tr></thead><tbody>
-              {p.parcelas.map((x) => {
-                const set = (patch: object) => { revisar(`p:${x.id}`); up({ parcelas: p.parcelas.map((y) => (y.id === x.id ? { ...y, ...patch } : y)) }); };
-                const pc = conf[`p:${x.id}`];
-                return (<tr key={x.id} data-k={`p:${x.id}`} className={precisaRevisao(pc) ? (nivel(pc!) === "baixa" ? "bg-destructive/5" : "bg-warn/10") : ""}>
-                  <Td><Select className="min-w-40" value={x.tipo} onChange={(e) => set({ tipo: e.target.value })}>{TIPOS_PARCELA.map((t) => <option key={t}>{t}</option>)}</Select></Td>
-                  <Td><Input type="number" className="min-w-28 font-mono" value={x.valor || ""} onChange={(e) => set({ valor: +e.target.value })} /></Td>
-                  <Td><Input type="date" className="font-mono" value={x.vencimento} onChange={(e) => set({ vencimento: e.target.value })} /></Td>
-                  <Td><Mono>{pct(p.vgv ? (x.valor / p.vgv) * 100 : 0)}</Mono>{pc !== undefined && <div className="mt-1 flex gap-1 text-xs">{L("", `p:${x.id}`)}</div>}</Td>
-                  <Td><Btn variant="danger" onClick={() => up({ parcelas: p.parcelas.filter((y) => y.id !== x.id) })}><Trash2 className="h-4 w-4" /></Btn></Td>
-                </tr>);
-              })}
-              {!p.parcelas.length && <tr><Td className="text-center text-muted-foreground">Nenhuma parcela cadastrada.</Td></tr>}
-            </tbody></table></div>
-          </Card>
+          <ParcelasTable key={p.id} parcelas={p.parcelas} onChange={(parcelas) => up({ parcelas })}
+            revisar={(id) => revisar(`p:${id}`)} indicador={(id) => conf[`p:${id}`] === undefined ? null : L("", `p:${id}`)}
+            destaque={(ids) => ids.some((id) => nivel(conf[`p:${id}`]) === "baixa" && precisaRevisao(conf[`p:${id}`])) ? "bg-destructive/5" : ids.some((id) => precisaRevisao(conf[`p:${id}`])) ? "bg-warn/10" : ""} />
           <Card title="Participantes do rateio (% sobre VGV)" action={<Btn variant="ghost" onClick={() => up({ participantes: [...p.participantes, { membroId: s.membros[0]?.id ?? "", pct: 1 }] })}><Plus className="h-4 w-4" />Participante</Btn>}>
             <div className="space-y-2">
               {p.participantes.map((x, i) => (

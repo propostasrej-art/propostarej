@@ -16,3 +16,4 @@
 - Commission cascade logic lives only in `src/lib/rateio.ts` (pure, tested in `src/test/rateio.test.ts`); UI pages call it via `src/lib/helpers.ts`.
 - Document extraction runs server-side in `src/lib/extracao.functions.ts` (Lovable AI Gateway, strict JSON schema, streamed); the API key never reaches the browser.
 - Source highlighting: AI returns a literal quote per field; the browser OCRs the uploaded file (tesseract.js, pdfjs for PDFs) and matches quotes to word boxes via `src/lib/trechos.ts`, because model-provided coordinates are unreliable.
+- The proposal installment table groups recurring installments in the client and expands edits back into individual dated installments, preserving IDs so persistence, commission calculations and document sources keep their existing contracts.
