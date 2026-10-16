@@ -30,16 +30,21 @@ function Ficha() {
   const nav = useNavigate();
   const s = useStore((x) => x);
   const [p, setP] = useState<Proposta>(vazia);
-  const [ocr, setOcr] = useState(false);
+  const [ocr, setOcr] = useState<string | null>(null);
   const extrair = useServerFn(extrairProposta);
   const [conf, setConf] = useState<Record<string, number>>({});
-  const [arquivo, setArquivo] = useState<File | null>(null);
-  const [trechos, setTrechos] = useState<Record<string, string>>({});
-  const [rotulos, setRotulos] = useState<Record<string, string>>({});
+  const [docs, setDocs] = useState<Doc[]>([]);
+  const [docAtivo, setDocAtivo] = useState<string | null>(null);
+  const [origem, setOrigem] = useState<Record<string, string>>({});
+  const [extras, setExtras] = useState<string[]>([]);
   const [ativo, setAtivo] = useState<string | null>(null);
-  const marcar = (e: React.SyntheticEvent) => { const k = (e.target as HTMLElement).closest("[data-k]")?.getAttribute("data-k"); if (k) setAtivo(k); };
+  const atual = docs.find((d) => d.id === docAtivo) ?? null;
+  const arquivo = atual?.file ?? null;
+  const trechos = atual?.trechos ?? {};
+  const rotulos = atual?.rotulos ?? {};
+  const marcar = (e: React.SyntheticEvent) => { const k = (e.target as HTMLElement).closest("[data-k]")?.getAttribute("data-k"); if (k) { setAtivo(k); if (origem[k]) setDocAtivo(origem[k]!); } };
   const pick = (k: string) => { setAtivo(k); const el = document.querySelector<HTMLElement>(`[data-k="${k}"]`); (el?.matches("input,select") ? el : el?.querySelector<HTMLElement>("input,select"))?.focus({ preventScroll: false }); };
-  useEffect(() => { const f = id && getState().propostas.find((x) => x.id === id); setP(f ? structuredClone(f) : vazia()); setConf({}); setArquivo(null); setTrechos({}); setAtivo(null); }, [id]);
+  useEffect(() => { const f = id && getState().propostas.find((x) => x.id === id); setP(f ? structuredClone(f) : vazia()); setConf({}); setDocs([]); setDocAtivo(null); setOrigem({}); setExtras([]); setAtivo(null); }, [id]);
   const revisar = (k: string) => setConf((c) => { if (!(k in c)) return c; const n = { ...c }; delete n[k]; return n; });
   const rc = (k: string) => (precisaRevisao(conf[k]) ? (nivel(conf[k]!) === "baixa" ? "border-destructive bg-destructive/5 ring-2 ring-destructive/20" : "border-warn bg-warn/10 ring-2 ring-warn/25") : "");
   const L = (label: string, k: string) => {
