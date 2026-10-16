@@ -10,33 +10,154 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AssinaturasRouteImport } from './routes/assinaturas'
+import { Route as ContratoRouteImport } from './routes/contrato'
+import { Route as EmpreendimentosRouteImport } from './routes/empreendimentos'
+import { Route as EquipeRouteImport } from './routes/equipe'
+import { Route as InboxRouteImport } from './routes/inbox'
+import { Route as PropostaRouteImport } from './routes/proposta'
+import { Route as RankingRouteImport } from './routes/ranking'
+import { Route as RateioRouteImport } from './routes/rateio'
+import { Route as WebhooksRouteImport } from './routes/webhooks'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AssinaturasRoute = AssinaturasRouteImport.update({
+  id: '/assinaturas',
+  path: '/assinaturas',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ContratoRoute = ContratoRouteImport.update({
+  id: '/contrato',
+  path: '/contrato',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EmpreendimentosRoute = EmpreendimentosRouteImport.update({
+  id: '/empreendimentos',
+  path: '/empreendimentos',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EquipeRoute = EquipeRouteImport.update({
+  id: '/equipe',
+  path: '/equipe',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const InboxRoute = InboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PropostaRoute = PropostaRouteImport.update({
+  id: '/proposta',
+  path: '/proposta',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RankingRoute = RankingRouteImport.update({
+  id: '/ranking',
+  path: '/ranking',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RateioRoute = RateioRouteImport.update({
+  id: '/rateio',
+  path: '/rateio',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const WebhooksRoute = WebhooksRouteImport.update({
+  id: '/webhooks',
+  path: '/webhooks',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/assinaturas': typeof AssinaturasRoute
+  '/contrato': typeof ContratoRoute
+  '/empreendimentos': typeof EmpreendimentosRoute
+  '/equipe': typeof EquipeRoute
+  '/inbox': typeof InboxRoute
+  '/proposta': typeof PropostaRoute
+  '/ranking': typeof RankingRoute
+  '/rateio': typeof RateioRoute
+  '/webhooks': typeof WebhooksRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/assinaturas': typeof AssinaturasRoute
+  '/contrato': typeof ContratoRoute
+  '/empreendimentos': typeof EmpreendimentosRoute
+  '/equipe': typeof EquipeRoute
+  '/inbox': typeof InboxRoute
+  '/proposta': typeof PropostaRoute
+  '/ranking': typeof RankingRoute
+  '/rateio': typeof RateioRoute
+  '/webhooks': typeof WebhooksRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/assinaturas': typeof AssinaturasRoute
+  '/contrato': typeof ContratoRoute
+  '/empreendimentos': typeof EmpreendimentosRoute
+  '/equipe': typeof EquipeRoute
+  '/inbox': typeof InboxRoute
+  '/proposta': typeof PropostaRoute
+  '/ranking': typeof RankingRoute
+  '/rateio': typeof RateioRoute
+  '/webhooks': typeof WebhooksRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/assinaturas'
+    | '/contrato'
+    | '/empreendimentos'
+    | '/equipe'
+    | '/inbox'
+    | '/proposta'
+    | '/ranking'
+    | '/rateio'
+    | '/webhooks'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/assinaturas'
+    | '/contrato'
+    | '/empreendimentos'
+    | '/equipe'
+    | '/inbox'
+    | '/proposta'
+    | '/ranking'
+    | '/rateio'
+    | '/webhooks'
+  id:
+    | '__root__'
+    | '/'
+    | '/assinaturas'
+    | '/contrato'
+    | '/empreendimentos'
+    | '/equipe'
+    | '/inbox'
+    | '/proposta'
+    | '/ranking'
+    | '/rateio'
+    | '/webhooks'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AssinaturasRoute: typeof AssinaturasRoute
+  ContratoRoute: typeof ContratoRoute
+  EmpreendimentosRoute: typeof EmpreendimentosRoute
+  EquipeRoute: typeof EquipeRoute
+  InboxRoute: typeof InboxRoute
+  PropostaRoute: typeof PropostaRoute
+  RankingRoute: typeof RankingRoute
+  RateioRoute: typeof RateioRoute
+  WebhooksRoute: typeof WebhooksRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +169,83 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/assinaturas': {
+      id: '/assinaturas'
+      path: '/assinaturas'
+      fullPath: '/assinaturas'
+      preLoaderRoute: typeof AssinaturasRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/contrato': {
+      id: '/contrato'
+      path: '/contrato'
+      fullPath: '/contrato'
+      preLoaderRoute: typeof ContratoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/empreendimentos': {
+      id: '/empreendimentos'
+      path: '/empreendimentos'
+      fullPath: '/empreendimentos'
+      preLoaderRoute: typeof EmpreendimentosRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/equipe': {
+      id: '/equipe'
+      path: '/equipe'
+      fullPath: '/equipe'
+      preLoaderRoute: typeof EquipeRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/inbox': {
+      id: '/inbox'
+      path: '/inbox'
+      fullPath: '/inbox'
+      preLoaderRoute: typeof InboxRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/proposta': {
+      id: '/proposta'
+      path: '/proposta'
+      fullPath: '/proposta'
+      preLoaderRoute: typeof PropostaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/ranking': {
+      id: '/ranking'
+      path: '/ranking'
+      fullPath: '/ranking'
+      preLoaderRoute: typeof RankingRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/rateio': {
+      id: '/rateio'
+      path: '/rateio'
+      fullPath: '/rateio'
+      preLoaderRoute: typeof RateioRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/webhooks': {
+      id: '/webhooks'
+      path: '/webhooks'
+      fullPath: '/webhooks'
+      preLoaderRoute: typeof WebhooksRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AssinaturasRoute: AssinaturasRoute,
+  ContratoRoute: ContratoRoute,
+  EmpreendimentosRoute: EmpreendimentosRoute,
+  EquipeRoute: EquipeRoute,
+  InboxRoute: InboxRoute,
+  PropostaRoute: PropostaRoute,
+  RankingRoute: RankingRoute,
+  RateioRoute: RateioRoute,
+  WebhooksRoute: WebhooksRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
