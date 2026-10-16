@@ -11,18 +11,37 @@ import { useServerFn } from "@tanstack/react-start";
 import { extrairProposta } from "@/lib/extracao.functions";
 import { nivel, pendentes, precisaRevisao, LIMIAR_REVISAO } from "@/lib/confianca";
 import { cn } from "@/lib/utils";
-import { Check, ShieldAlert, FileText } from "lucide-react";
+import { Check, ShieldAlert, FileText, Camera } from "lucide-react";
 import { DocViewer } from "@/components/DocViewer";
 
 type Doc = { id: string; slot: string; tipo: string; file: File; trechos: Record<string, string>; rotulos: Record<string, string> };
 const SLOTS_FIXOS = ["Documento de identidade (RG/CNH)", "CPF", "Comprovante de residência", "Comprovante de estado civil", "Proposta"];
 // Campos do comprador que cada tipo de documento pode preencher
 const CAMPOS_DOC: Record<string, string[]> = {
-  "Documento de identidade (RG/CNH)": ["nome", "cpf", "rg"],
-  CPF: ["nome", "cpf"],
+  "Documento de identidade (RG/CNH)": ["nome", "cpf", "rg", "nascimento", "nacionalidade"],
+  CPF: ["nome", "cpf", "nascimento"],
   "Comprovante de residência": ["nome", "endereco"],
-  "Comprovante de estado civil": ["nome", "cpf", "conjuge"],
+  "Comprovante de estado civil": ["nome", "cpf", "conjuge", "estadoCivil"],
 };
+
+const NOMES_C: Record<string, string> = { nome: "Nome", cpf: "CPF", rg: "RG", endereco: "Endereço", conjuge: "Cônjuge", nascimento: "Nascimento", estadoCivil: "Estado civil", profissao: "Profissão", nacionalidade: "Nacionalidade", email: "E-mail", telefone: "Telefone" };
+const ACEITOS = ["application/pdf", "image/png", "image/jpeg", "image/webp", "image/gif", "text/plain"];
+const tipoDe = (f: File) => f.type || (/\.txt$/i.test(f.name) ? "text/plain" : /\.pdf$/i.test(f.name) ? "application/pdf" : "");
+// Reduz fotos grandes para no máx. 1600px, fundo branco, JPEG 82% (também converte GIF)
+async function otimizarImagem(f: File): Promise<File> {
+  const url = URL.createObjectURL(f);
+  try {
+    const img = new Image();
+    await new Promise((ok, err) => { img.onload = ok; img.onerror = err; img.src = url; });
+    const k = Math.min(1, 1600 / Math.max(img.naturalWidth, img.naturalHeight));
+    if (k === 1 && f.type !== "image/gif" && f.size < 1.5 * 1024 * 1024) return f;
+    const c = document.createElement("canvas");
+    c.width = Math.round(img.naturalWidth * k); c.height = Math.round(img.naturalHeight * k);
+    const ctx = c.getContext("2d")!; ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, c.width, c.height); ctx.drawImage(img, 0, 0, c.width, c.height);
+    const blob = await new Promise<Blob | null>((ok) => c.toBlob(ok, "image/jpeg", 0.82));
+    return blob ? new File([blob], f.name.replace(/\.\w+$/, "") + ".jpg", { type: "image/jpeg" }) : f;
+  } finally { URL.revokeObjectURL(url); }
+}
 
 export const Route = createFileRoute("/_authenticated/proposta")({
   validateSearch: (s: Record<string, unknown>) => ({ id: typeof s["id"] === "string" ? (s["id"] as string) : undefined }),
@@ -48,6 +67,7 @@ function Ficha() {
   const [origem, setOrigem] = useState<Record<string, string>>({});
   const [extras, setExtras] = useState<string[]>([]);
   const [ativo, setAtivo] = useState<string | null>(null);
+  const [sobre, setSobre] = useState<string | null>(null);
   const atual = docs.find((d) => d.id === docAtivo) ?? null;
   const arquivo = atual?.file ?? null;
   const trechos = atual?.trechos ?? {};
@@ -80,13 +100,18 @@ function Ficha() {
     toast.success("Proposta salva");
     nav({ to: "/proposta", search: { id: p.id } });
   }
-  async function onFile(f: File | undefined, tipo: string, slot: string) {
-    if (!f) return;
+  async function onFile(f0: File | undefined, tipo: string, slot: string) {
+    if (!f0) return;
+    if (f0.size === 0) { toast.error("Arquivo vazio ou corrompido."); return; }
+    const mime = tipoDe(f0);
+    if (!ACEITOS.includes(mime)) { toast.error("Formato não suportado. Use PDF, JPG, PNG, WEBP, GIF ou TXT."); return; }
+    let f = f0;
+    if (mime.startsWith("image/")) { try { f = await otimizarImagem(f0); } catch { toast.error("Imagem corrompida."); return; } }
     if (f.size > 10 * 1024 * 1024) { toast.error("Arquivo acima de 10 MB."); return; }
     setOcr(slot);
     try {
       const base64 = await new Promise<string>((ok, err) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] ?? ""); r.onerror = err; r.readAsDataURL(f); });
-      const out = await extrair({ data: { filename: f.name, mime: f.type || "application/pdf", base64, tipoDoc: tipo } });
+      const out = await extrair({ data: { filename: f.name, mime: mime.startsWith("image/") ? f.type : mime, base64, tipoDoc: tipo } });
       if (!out.ok) { toast.error(out.erro); return; }
       const d = out.dados;
       const isProp = tipo === "Proposta";
@@ -94,8 +119,8 @@ function Ficha() {
       const nc: Record<string, number> = {};
       const tr: Record<string, string> = {};
       const rot: Record<string, string> = {};
-      const nomes: Record<string, string> = { nome: "Nome", cpf: "CPF", rg: "RG", endereco: "Endereço", conjuge: "Cônjuge" };
-      const permitidos = CAMPOS_DOC[tipo] ?? ["nome", "cpf", "rg", "endereco", "conjuge"];
+      const nomes = NOMES_C;
+      const permitidos = CAMPOS_DOC[tipo] ?? Object.keys(NOMES_C);
       let emp: { id: string } | undefined | "" = undefined;
       let novas: { id: string; tipo: string; valor: number; vencimento: string; confianca: number; trecho: string }[] = [];
       if (isProp) {
@@ -114,14 +139,20 @@ function Ficha() {
         if (i < 0) i = !isProp && n === 0 ? 0 : compr.findIndex((x) => !x.nome && !x.cpf);
         if (i < 0) { compr.push({ nome: "", cpf: "", rg: "", endereco: "", conjuge: "" }); i = compr.length - 1; }
         const alvo = compr[i]!;
-        (Object.keys(nomes) as (keyof typeof alvo)[]).forEach((k) => {
+        (Object.keys(nomes) as (keyof typeof c & keyof typeof alvo)[]).forEach((k) => {
           if (!permitidos.includes(k) || !c[k]) return;
           alvo[k] = c[k];
-          nc[`c${i}.${k}`] = c.confianca[k];
-          tr[`c${i}.${k}`] = c.trechos[k];
+          nc[`c${i}.${k}`] = c.confianca?.[k] ?? 0.5;
+          tr[`c${i}.${k}`] = c.trechos?.[k] ?? "";
           rot[`c${i}.${k}`] = `Comprador ${i + 1} · ${nomes[k]}`;
         });
       });
+      // Equipe de vendas: cruza nomes com o cadastro de Equipe
+      const norm = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
+      const acha = (n: string) => { const x = norm(n); return x ? s.membros.find((m) => norm(m.nome).includes(x) || x.includes(norm(m.nome)) || (m.apelido && norm(m.apelido) === x)) : undefined; };
+      const equipe = isProp && d.equipe ? [d.equipe.corretor1, d.equipe.corretor2, d.equipe.gerente].map(acha).filter((m): m is NonNullable<typeof m> => !!m) : [];
+      const naoAchados = isProp && d.equipe ? [d.equipe.corretor1, d.equipe.corretor2, d.equipe.gerente].filter((n) => n && !acha(n)) : [];
+      if (naoAchados.length) toast.info(`Não encontrados na Equipe: ${naoAchados.join(", ")}.`);
       setConf((c) => ({ ...c, ...nc }));
       setOrigem((o) => ({ ...o, ...Object.fromEntries(Object.keys(tr).map((k) => [k, docId])) }));
       setDocs((ds) => [...ds.filter((x) => x.slot !== slot), { id: docId, slot, tipo, file: f, trechos: tr, rotulos: rot }]);
@@ -135,6 +166,8 @@ function Ficha() {
           parcelas: novas.length
             ? novas.map((x) => ({ id: x.id, tipo: (TIPOS_PARCELA as readonly string[]).includes(x.tipo) ? (x.tipo as TipoParcela) : "Mensal", valor: x.valor, vencimento: /^\d{4}-\d{2}-\d{2}$/.test(x.vencimento) ? x.vencimento : cur.createdAt }))
             : cur.parcelas,
+          participantes: cur.participantes.length || !equipe.length ? cur.participantes
+            : [...new Map(equipe.map((m) => [m.id, { membroId: m.id, pct: 1 }])).values()],
         } : {}),
       }));
       const np = pendentes(nc).length;
@@ -176,6 +209,12 @@ function Ficha() {
                     <Field label={L("RG", `c${i}.rg`)} className="sm:col-span-2"><Input data-k={`c${i}.rg`} className={cn("font-mono", rc(`c${i}.rg`))} value={c.rg} onChange={(e) => set("rg", e.target.value)} /></Field>
                     <Field label={L("Cônjuge", `c${i}.conjuge`)} className="sm:col-span-4"><Input data-k={`c${i}.conjuge`} className={cn("", rc(`c${i}.conjuge`))} value={c.conjuge} onChange={(e) => set("conjuge", e.target.value)} /></Field>
                     <Field label={L("Endereço", `c${i}.endereco`)} className="sm:col-span-6"><Input data-k={`c${i}.endereco`} className={cn("", rc(`c${i}.endereco`))} value={c.endereco} onChange={(e) => set("endereco", e.target.value)} /></Field>
+                    <Field label={L("Nascimento", `c${i}.nascimento`)} className="sm:col-span-2"><Input type="date" data-k={`c${i}.nascimento`} className={cn("font-mono", rc(`c${i}.nascimento`))} value={c.nascimento ?? ""} onChange={(e) => set("nascimento", e.target.value)} /></Field>
+                    <Field label={L("Estado civil", `c${i}.estadoCivil`)} className="sm:col-span-2"><Input data-k={`c${i}.estadoCivil`} className={rc(`c${i}.estadoCivil`)} value={c.estadoCivil ?? ""} onChange={(e) => set("estadoCivil", e.target.value)} /></Field>
+                    <Field label={L("Nacionalidade", `c${i}.nacionalidade`)} className="sm:col-span-2"><Input data-k={`c${i}.nacionalidade`} className={rc(`c${i}.nacionalidade`)} value={c.nacionalidade ?? ""} onChange={(e) => set("nacionalidade", e.target.value)} /></Field>
+                    <Field label={L("Profissão", `c${i}.profissao`)} className="sm:col-span-2"><Input data-k={`c${i}.profissao`} className={rc(`c${i}.profissao`)} value={c.profissao ?? ""} onChange={(e) => set("profissao", e.target.value)} /></Field>
+                    <Field label={L("E-mail", `c${i}.email`)} className="sm:col-span-2"><Input type="email" data-k={`c${i}.email`} className={rc(`c${i}.email`)} value={c.email ?? ""} onChange={(e) => set("email", e.target.value)} /></Field>
+                    <Field label={L("Telefone", `c${i}.telefone`)} className="sm:col-span-2"><Input data-k={`c${i}.telefone`} className={cn("font-mono", rc(`c${i}.telefone`))} value={c.telefone ?? ""} onChange={(e) => set("telefone", e.target.value)} /></Field>
                   </div>
                 );
               })}
@@ -218,7 +257,9 @@ function Ficha() {
                 const d = docs.find((x) => x.slot === slot);
                 const lendo = ocr === slot;
                 return (
-                  <div key={slot} className={cn("flex items-center gap-3 rounded-lg border p-2.5", d && docAtivo === d.id && "border-primary bg-primary/5")}>
+                  <div key={slot} onDragOver={(e) => { e.preventDefault(); setSobre(slot); }} onDragLeave={() => setSobre((x) => (x === slot ? null : x))}
+                    onDrop={(e) => { e.preventDefault(); setSobre(null); if (!ocr) onFile(e.dataTransfer.files?.[0], extra ? "Documento adicional" : tipo, slot); }}
+                    className={cn("flex items-center gap-2 rounded-lg border p-2.5 transition-colors", d && docAtivo === d.id && "border-primary bg-primary/5", sobre === slot && "border-dashed border-primary bg-primary/10")}>
                     <FileText className={cn("h-5 w-5 shrink-0", d ? "text-success" : "text-muted-foreground")} />
                     <button type="button" disabled={!d} onClick={() => d && setDocAtivo(d.id)} className="min-w-0 flex-1 text-left">
                       <div className="text-sm font-medium">{tipo}</div>
@@ -226,13 +267,17 @@ function Ficha() {
                     </button>
                     <label className={cn("inline-flex cursor-pointer items-center gap-1 rounded-lg border bg-card px-2.5 py-1.5 text-xs font-medium hover:bg-muted", ocr && "pointer-events-none opacity-50")}>
                       <Upload className="h-3.5 w-3.5" />{d ? "Trocar" : "Enviar"}
-                      <input type="file" disabled={!!ocr} accept=".pdf,image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => { onFile(e.target.files?.[0], extra ? "Documento adicional" : tipo, slot); e.target.value = ""; }} />
+                      <input type="file" disabled={!!ocr} accept=".pdf,.txt,image/png,image/jpeg,image/webp,image/gif,text/plain" className="hidden" onChange={(e) => { onFile(e.target.files?.[0], extra ? "Documento adicional" : tipo, slot); e.target.value = ""; }} />
+                    </label>
+                    <label title="Fotografar com a câmera" className={cn("inline-flex cursor-pointer items-center rounded-lg border bg-card px-2 py-1.5 hover:bg-muted", ocr && "pointer-events-none opacity-50")}>
+                      <Camera className="h-3.5 w-3.5" /><span className="sr-only">Câmera</span>
+                      <input type="file" disabled={!!ocr} accept="image/*" capture="environment" className="hidden" onChange={(e) => { onFile(e.target.files?.[0], extra ? "Documento adicional" : tipo, slot); e.target.value = ""; }} />
                     </label>
                     {extra && <Btn variant="danger" className="px-2" onClick={() => { setExtras((x) => x.filter((y) => y !== slot)); setDocs((ds) => ds.filter((y) => y.slot !== slot)); }}><Trash2 className="h-4 w-4" /></Btn>}
                   </div>
                 );
               })}
-              <p className="pt-1 text-xs text-muted-foreground">PDF ou imagem até 10 MB. Os campos da ficha são preenchidos automaticamente.</p>
+              <p className="pt-1 text-xs text-muted-foreground">Arraste o arquivo, envie ou fotografe. PDF, JPG, PNG, WEBP, GIF ou TXT até 10 MB; fotos são otimizadas antes do envio. Os campos da ficha são preenchidos automaticamente.</p>
             </div>
           </Card>
           {arquivo && (
