@@ -20,6 +20,7 @@ function Hooks() {
   const [payload, setPayload] = useState(exemplo);
   const [u, setU] = useState<Usuario>({ id: "", nome: "", email: "", papel: "Corretor" });
   useEffect(() => setOrigin(window.location.origin), []);
+  if (s.eu?.papel !== "Admin") return <Card>Apenas administradores podem acessar esta página.</Card>;
   const url = `${origin}/api/public/propostas`;
   function simular() {
     try {
@@ -43,12 +44,13 @@ function Hooks() {
           <Btn className="mt-3" onClick={simular}><Zap className="h-4 w-4" />Simular recebimento</Btn>
           <div className="mt-4 space-y-1">{s.webhookLog.map((l, i) => <div key={i} className="flex justify-between rounded-md bg-muted px-3 py-1.5 text-xs"><span>{l.origem}</span><Mono>{new Date(l.at).toLocaleString("pt-BR")}</Mono></div>)}</div>
         </Card>
-        <Card title="Usuários e permissões">
+        <Card title="Usuários e permissões (convites)">
+          <p className="mb-3 text-xs text-muted-foreground">Somente e-mails desta lista podem criar conta. Mudar o papel aqui altera o acesso na hora; excluir remove o acesso.</p>
           <div className="grid gap-2 sm:grid-cols-4">
             <Input placeholder="Nome" value={u.nome} onChange={(e) => setU({ ...u, nome: e.target.value })} />
             <Input placeholder="E-mail" value={u.email} onChange={(e) => setU({ ...u, email: e.target.value })} />
             <Select value={u.papel} onChange={(e) => setU({ ...u, papel: e.target.value as Usuario["papel"] })}>{["Admin", "Gerente", "Corretor"].map((x) => <option key={x}>{x}</option>)}</Select>
-            <Btn onClick={() => { if (!u.nome) return; setState((x) => ({ ...x, usuarios: [...x.usuarios, { ...u, id: uid() }] })); setU({ id: "", nome: "", email: "", papel: "Corretor" }); }}><Plus className="h-4 w-4" />Adicionar</Btn>
+            <Btn onClick={() => { if (!u.nome || !u.email.includes("@")) return; setState((x) => ({ ...x, usuarios: [...x.usuarios, { ...u, id: uid() }] })); setU({ id: "", nome: "", email: "", papel: "Corretor" }); }}><Plus className="h-4 w-4" />Adicionar</Btn>
           </div>
           <table className="mt-4 w-full"><thead><tr><Th>Nome</Th><Th>E-mail</Th><Th>Papel</Th><Th /></tr></thead><tbody>
             {s.usuarios.map((x) => <tr key={x.id}><Td>{x.nome}</Td><Td><Mono className="text-xs">{x.email}</Mono></Td>

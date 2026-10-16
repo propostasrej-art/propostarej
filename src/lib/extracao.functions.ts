@@ -1,3 +1,4 @@
+import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
 import { createServerFn } from "@tanstack/react-start";
 import { z } from "zod";
 
@@ -40,6 +41,7 @@ const PROMPT = `Você é um analista de cadastro imobiliário. Extraia do docume
 - Para cada campo informe também "trecho(s)": a cópia LITERAL e curta (até ~12 palavras) do texto do documento de onde o dado saiu, exatamente como está escrito (mesma grafia, sem corrigir). Se não houver, string vazia.`;
 
 export const extrairProposta = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({
     filename: z.string().max(200), mime: z.string().max(100), base64: z.string().min(10).max(14_000_000),
   }).parse(i))

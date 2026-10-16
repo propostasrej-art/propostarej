@@ -10,7 +10,9 @@
 <!-- LOVABLE:END -->
 
 ## Architecture
-- App data lives in a localStorage-backed store (`src/lib/store.ts`, useSyncExternalStore); seed must stay deterministic so SSR hydration matches.
+- App data lives in Lovable Cloud tables (jsonb `dados` per entity); `src/lib/store.ts` loads it after sign-in and `setState` diffs old/new state to upsert/delete rows, so pages keep a simple synchronous API.
+- Access rules (Admin/Gerente/Corretor, invite-only signup via `convites` + auth trigger) are enforced by RLS in the database; UI hiding is cosmetic only.
+- All app pages live under `src/routes/_authenticated/` (client-only gate that also loads the store); `/auth` and `/reset-password` are the only public pages.
 - Commission cascade logic lives only in `src/lib/rateio.ts` (pure, tested in `src/test/rateio.test.ts`); UI pages call it via `src/lib/helpers.ts`.
 - Document extraction runs server-side in `src/lib/extracao.functions.ts` (Lovable AI Gateway, strict JSON schema, streamed); the API key never reaches the browser.
 - Source highlighting: AI returns a literal quote per field; the browser OCRs the uploaded file (tesseract.js, pdfjs for PDFs) and matches quotes to word boxes via `src/lib/trechos.ts`, because model-provided coordinates are unreliable.
