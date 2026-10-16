@@ -14,16 +14,208 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      config: {
+        Row: {
+          dados: Json
+          id: number
+        }
+        Insert: {
+          dados: Json
+          id?: number
+        }
+        Update: {
+          dados?: Json
+          id?: number
+        }
+        Relationships: []
+      }
+      convites: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          nome: string
+          papel: Database["public"]["Enums"]["app_role"]
+        }
+        Insert: {
+          created_at?: string
+          email: string
+          id: string
+          nome?: string
+          papel?: Database["public"]["Enums"]["app_role"]
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+          papel?: Database["public"]["Enums"]["app_role"]
+        }
+        Relationships: []
+      }
+      empreendimentos: {
+        Row: {
+          dados: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          dados: Json
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          dados?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      envelopes: {
+        Row: {
+          dados: Json
+          id: string
+          proposta_id: string
+          updated_at: string
+        }
+        Insert: {
+          dados: Json
+          id: string
+          proposta_id: string
+          updated_at?: string
+        }
+        Update: {
+          dados?: Json
+          id?: string
+          proposta_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "envelopes_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      membros: {
+        Row: {
+          dados: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          dados: Json
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          dados?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          email: string
+          id: string
+          nome: string
+        }
+        Insert: {
+          created_at?: string
+          email?: string
+          id: string
+          nome?: string
+        }
+        Update: {
+          created_at?: string
+          email?: string
+          id?: string
+          nome?: string
+        }
+        Relationships: []
+      }
+      propostas: {
+        Row: {
+          criado_por: string | null
+          dados: Json
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          criado_por?: string | null
+          dados: Json
+          id: string
+          updated_at?: string
+        }
+        Update: {
+          criado_por?: string | null
+          dados?: Json
+          id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
+      webhook_log: {
+        Row: {
+          at: string
+          id: number
+          origem: string
+          payload: string
+        }
+        Insert: {
+          at?: string
+          id?: number
+          origem?: string
+          payload?: string
+        }
+        Update: {
+          at?: string
+          id?: number
+          origem?: string
+          payload?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_any_role: { Args: { _user_id: string }; Returns: boolean }
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
+      is_staff: { Args: { _user_id: string }; Returns: boolean }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "gerente" | "corretor"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +342,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "gerente", "corretor"],
+    },
   },
 } as const
