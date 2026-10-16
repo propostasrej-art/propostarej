@@ -5,26 +5,33 @@ const TIPOS = ["Sinal/Ato", "Mensal", "Semestral", "Chaves", "Financiamento Banc
 const str = { type: "string" };
 const schema = {
   type: "object", additionalProperties: false,
-  required: ["empreendimento", "unidade", "torre", "vaga", "vgv", "compradores", "parcelas"],
+  required: ["empreendimento", "unidade", "torre", "vaga", "vgv", "compradores", "parcelas", "confianca"],
   properties: {
     empreendimento: str, unidade: str, torre: str, vaga: str, vgv: { type: "number" },
-    compradores: { type: "array", items: { type: "object", additionalProperties: false, required: ["nome", "cpf", "rg", "endereco", "conjuge"],
-      properties: { nome: str, cpf: str, rg: str, endereco: str, conjuge: str } } },
-    parcelas: { type: "array", items: { type: "object", additionalProperties: false, required: ["tipo", "valor", "vencimento"],
-      properties: { tipo: { type: "string", enum: TIPOS }, valor: { type: "number" }, vencimento: { type: "string", description: "YYYY-MM-DD" } } } },
+    confianca: { type: "object", additionalProperties: false, required: ["empreendimento", "unidade", "torre", "vaga", "vgv"],
+      properties: { empreendimento: { type: "number", description: "confiança 0 a 1" }, unidade: { type: "number", description: "confiança 0 a 1" }, torre: { type: "number", description: "confiança 0 a 1" }, vaga: { type: "number", description: "confiança 0 a 1" }, vgv: { type: "number", description: "confiança 0 a 1" } } },
+    compradores: { type: "array", items: { type: "object", additionalProperties: false, required: ["nome", "cpf", "rg", "endereco", "conjuge", "confianca"],
+      properties: { nome: str, cpf: str, rg: str, endereco: str, conjuge: str,
+        confianca: { type: "object", additionalProperties: false, required: ["nome", "cpf", "rg", "endereco", "conjuge"],
+          properties: { nome: { type: "number", description: "confiança 0 a 1" }, cpf: { type: "number", description: "confiança 0 a 1" }, rg: { type: "number", description: "confiança 0 a 1" }, endereco: { type: "number", description: "confiança 0 a 1" }, conjuge: { type: "number", description: "confiança 0 a 1" } } } } } },
+    parcelas: { type: "array", items: { type: "object", additionalProperties: false, required: ["tipo", "valor", "vencimento", "confianca"],
+      properties: { tipo: { type: "string", enum: TIPOS }, valor: { type: "number" }, vencimento: { type: "string", description: "YYYY-MM-DD" }, confianca: { type: "number", description: "confiança 0 a 1" } } } },
   },
 };
 
+type C = { nome: string; cpf: string; rg: string; endereco: string; conjuge: string };
 export type Extraido = {
   empreendimento: string; unidade: string; torre: string; vaga: string; vgv: number;
-  compradores: { nome: string; cpf: string; rg: string; endereco: string; conjuge: string }[];
-  parcelas: { tipo: string; valor: number; vencimento: string }[];
+  confianca: Record<"empreendimento" | "unidade" | "torre" | "vaga" | "vgv", number>;
+  compradores: (C & { confianca: Record<keyof C, number> })[];
+  parcelas: { tipo: string; valor: number; vencimento: string; confianca: number }[];
 };
 
 const PROMPT = `Você é um analista de cadastro imobiliário. Extraia do documento (proposta de compra, ficha ou documento pessoal) os dados abaixo.
 - Valores em reais como número (ex.: 850000.5). VGV = preço total do imóvel.
 - Parcelas: liste CADA parcela individualmente com tipo, valor e vencimento (YYYY-MM-DD). Se houver "N mensais de X a partir de DATA", expanda em N itens mensais consecutivos.
-- CPF no formato 000.000.000-00. Campos ausentes: string vazia ou 0. Arrays vazios se não houver dados.`;
+- CPF no formato 000.000.000-00. Campos ausentes: string vazia ou 0. Arrays vazios se não houver dados.
+- Para cada campo informe "confianca" de 0 a 1: 1 = legível e inequívoco; 0.5–0.8 = parcialmente legível, inferido ou ambíguo; abaixo de 0.5 = ausente ou chutado. Campo vazio = 0. Seja rigoroso: dígitos borrados de CPF/RG ou valores somados por você devem ter confiança menor.`;
 
 export const extrairProposta = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => z.object({
