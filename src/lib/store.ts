@@ -40,7 +40,7 @@ function parcelasExemplo(vgv: number, base: number): Parcela[] {
 
 const seed = (): State => ({
   empreendimentos: [
-    { id: "e1", nome: "Residencial Vista Mar", endereco: "Av. Atlântica, 1200 — Santos/SP", construtora: "Construtora Horizonte", honorariosPct: 5, retencao: { ...RETENCAO_PADRAO } },
+    { id: "e1", nome: "Residencial Vista Mar", endereco: "Av. Atlântica, 1200 — Santos/SP", construtora: "Construtora Horizonte", honorariosPct: 5, retencao: { ...RETENCAO_PADRAO, "Sinal/Ato": 40 } },
     { id: "e2", nome: "Edifício Jardins Park", endereco: "R. Oscar Freire, 455 — São Paulo/SP", construtora: "Alfa Incorporações", honorariosPct: 4, retencao: { ...RETENCAO_PADRAO, Mensal: 40 } },
   ],
   membros: [
@@ -78,7 +78,7 @@ const seed = (): State => ({
   webhookLog: [],
 });
 
-const KEY = "rj-analista-v1";
+const KEY = "rj-analista-v2";
 let state: State | null = null;
 const listeners = new Set<() => void>();
 let serverState: State | null = null;
