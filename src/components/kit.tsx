@@ -34,10 +34,10 @@ export function Btn({ variant = "primary", className, ...p }: ButtonHTMLAttribut
   }[variant];
   return <button {...p} className={cn("inline-flex items-center gap-2 rounded-lg px-3.5 py-2 text-sm font-medium transition-colors disabled:opacity-50", v, className)} />;
 }
-export function Field({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
+export function Field({ label, children, className }: { label: ReactNode; children: ReactNode; className?: string }) {
   return (
     <label className={cn("block", className)}>
-      <span className="mb-1 block text-xs font-medium text-muted-foreground">{label}</span>
+      <span className="mb-1 flex items-center justify-between gap-2 text-xs font-medium text-muted-foreground">{label}</span>
       {children}
     </label>
   );
