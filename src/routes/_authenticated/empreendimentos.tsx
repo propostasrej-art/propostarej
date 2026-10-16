@@ -7,7 +7,7 @@ import { PROTEGIDAS, RETENCAO_PADRAO, TIPOS_PARCELA } from "@/lib/rateio";
 import { pct, uid } from "@/lib/format";
 import { meta } from "@/lib/helpers";
 
-export const Route = createFileRoute("/empreendimentos")({
+export const Route = createFileRoute("/_authenticated/empreendimentos")({
   head: () => meta("Empreendimentos", "Cadastro de empreendimentos, honorários e regras de retenção."),
   component: Emps,
 });

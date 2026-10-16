@@ -8,7 +8,7 @@ import { PROTEGIDAS } from "@/lib/rateio";
 import { brl, dt, pct } from "@/lib/format";
 import { comissaoPct, meta, rateioDaProposta } from "@/lib/helpers";
 
-export const Route = createFileRoute("/contrato")({
+export const Route = createFileRoute("/_authenticated/contrato")({
   head: () => meta("Contrato e Minutas", "Contrato de Prestação de Serviços de Corretagem Imobiliária em A4."),
   component: Contrato,
 });

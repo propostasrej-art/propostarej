@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 import { Check, ShieldAlert } from "lucide-react";
 import { DocViewer } from "@/components/DocViewer";
 
-export const Route = createFileRoute("/proposta")({
+export const Route = createFileRoute("/_authenticated/proposta")({
   validateSearch: (s: Record<string, unknown>) => ({ id: typeof s["id"] === "string" ? (s["id"] as string) : undefined }),
   head: () => meta("Ficha da Proposta", "Cadastro e extração de dados de propostas imobiliárias."),
   component: Ficha,

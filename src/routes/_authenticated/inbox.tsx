@@ -6,7 +6,7 @@ import { setState, useStore, type Status } from "@/lib/store";
 import { brl, dt } from "@/lib/format";
 import { meta } from "@/lib/helpers";
 
-export const Route = createFileRoute("/inbox")({
+export const Route = createFileRoute("/_authenticated/inbox")({
   head: () => meta("Inbox de Propostas", "Lista de propostas com busca e filtros de status."),
   component: InboxPage,
 });

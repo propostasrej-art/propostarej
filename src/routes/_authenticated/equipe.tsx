@@ -6,7 +6,7 @@ import { setState, useStore, type Funcao, type Membro } from "@/lib/store";
 import { uid } from "@/lib/format";
 import { meta } from "@/lib/helpers";
 
-export const Route = createFileRoute("/equipe")({
+export const Route = createFileRoute("/_authenticated/equipe")({
   head: () => meta("Equipe e Cargos", "Cadastro de corretores, gerentes e gestores."),
   component: Equipe,
 });

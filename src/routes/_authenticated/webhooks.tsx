@@ -7,7 +7,7 @@ import { setState, useStore, type Usuario } from "@/lib/store";
 import { uid } from "@/lib/format";
 import { meta } from "@/lib/helpers";
 
-export const Route = createFileRoute("/webhooks")({
+export const Route = createFileRoute("/_authenticated/webhooks")({
   head: () => meta("Webhooks e Acesso", "Endpoint para CRMs externos e controle de usuários."),
   component: Hooks,
 });

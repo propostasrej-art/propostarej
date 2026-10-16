@@ -6,7 +6,7 @@ import { useStore } from "@/lib/store";
 import { brl, dt } from "@/lib/format";
 import { comissaoPct, meta } from "@/lib/helpers";
 
-export const Route = createFileRoute("/ranking")({
+export const Route = createFileRoute("/_authenticated/ranking")({
   head: () => meta("Ranking Comercial", "Ranking de vendas por corretor, gerente e diretor."),
   component: Ranking,
 });
