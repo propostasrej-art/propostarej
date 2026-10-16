@@ -4,31 +4,36 @@ import { z } from "zod";
 
 const TIPOS = ["Sinal/Ato", "Mensal", "Semestral", "Chaves", "Financiamento Bancário", "FGTS", "Subsídio"];
 const str = { type: "string" };
+const TR = { type: "string", description: "trecho literal do documento usado" };
+const CF = { type: "number", description: "confiança 0 a 1" };
+const CAMPOS_C = ["nome", "cpf", "rg", "endereco", "conjuge", "nascimento", "estadoCivil", "profissao", "nacionalidade", "email", "telefone"] as const;
+const obj = (ks: readonly string[], v: object) => Object.fromEntries(ks.map((k) => [k, v]));
 const schema = {
   type: "object", additionalProperties: false,
-  required: ["empreendimento", "unidade", "torre", "vaga", "vgv", "compradores", "parcelas", "confianca", "trechos"],
+  required: ["empreendimento", "unidade", "torre", "vaga", "vgv", "compradores", "equipe", "parcelas", "confianca", "trechos"],
   properties: {
     empreendimento: str, unidade: str, torre: str, vaga: str, vgv: { type: "number" },
     confianca: { type: "object", additionalProperties: false, required: ["empreendimento", "unidade", "torre", "vaga", "vgv"],
       properties: { empreendimento: { type: "number", description: "confiança 0 a 1" }, unidade: { type: "number", description: "confiança 0 a 1" }, torre: { type: "number", description: "confiança 0 a 1" }, vaga: { type: "number", description: "confiança 0 a 1" }, vgv: { type: "number", description: "confiança 0 a 1" } } },
     trechos: { type: "object", additionalProperties: false, required: ["empreendimento", "unidade", "torre", "vaga", "vgv"],
       properties: { empreendimento: { type: "string", description: "trecho literal do documento usado" }, unidade: { type: "string", description: "trecho literal do documento usado" }, torre: { type: "string", description: "trecho literal do documento usado" }, vaga: { type: "string", description: "trecho literal do documento usado" }, vgv: { type: "string", description: "trecho literal do documento usado" } } },
-    compradores: { type: "array", items: { type: "object", additionalProperties: false, required: ["nome", "cpf", "rg", "endereco", "conjuge", "confianca", "trechos"],
-      properties: { nome: str, cpf: str, rg: str, endereco: str, conjuge: str,
-        trechos: { type: "object", additionalProperties: false, required: ["nome", "cpf", "rg", "endereco", "conjuge"],
-          properties: { nome: { type: "string", description: "trecho literal do documento usado" }, cpf: { type: "string", description: "trecho literal do documento usado" }, rg: { type: "string", description: "trecho literal do documento usado" }, endereco: { type: "string", description: "trecho literal do documento usado" }, conjuge: { type: "string", description: "trecho literal do documento usado" } } },
-        confianca: { type: "object", additionalProperties: false, required: ["nome", "cpf", "rg", "endereco", "conjuge"],
-          properties: { nome: { type: "number", description: "confiança 0 a 1" }, cpf: { type: "number", description: "confiança 0 a 1" }, rg: { type: "number", description: "confiança 0 a 1" }, endereco: { type: "number", description: "confiança 0 a 1" }, conjuge: { type: "number", description: "confiança 0 a 1" } } } } } },
+    compradores: { type: "array", items: { type: "object", additionalProperties: false, required: [...CAMPOS_C, "confianca", "trechos"],
+      properties: { ...obj(CAMPOS_C, str),
+        trechos: { type: "object", additionalProperties: false, required: CAMPOS_C, properties: obj(CAMPOS_C, TR) },
+        confianca: { type: "object", additionalProperties: false, required: CAMPOS_C, properties: obj(CAMPOS_C, CF) } } } },
+    equipe: { type: "object", additionalProperties: false, required: ["corretor1", "corretor2", "gerente"],
+      properties: { corretor1: { type: "string", description: "nome do corretor principal" }, corretor2: { type: "string", description: "nome do 2º corretor, se houver" }, gerente: { type: "string", description: "nome do gerente de vendas" } } },
     parcelas: { type: "array", items: { type: "object", additionalProperties: false, required: ["tipo", "valor", "vencimento", "confianca", "trecho"],
       properties: { tipo: { type: "string", enum: TIPOS }, valor: { type: "number" }, vencimento: { type: "string", description: "YYYY-MM-DD" }, confianca: { type: "number", description: "confiança 0 a 1" }, trecho: { type: "string", description: "trecho literal do documento usado" } } } },
   },
 };
 
-type C = { nome: string; cpf: string; rg: string; endereco: string; conjuge: string };
+type C = Record<(typeof CAMPOS_C)[number], string>;
 export type Extraido = {
   empreendimento: string; unidade: string; torre: string; vaga: string; vgv: number;
   confianca: Record<"empreendimento" | "unidade" | "torre" | "vaga" | "vgv", number>;
   trechos: Record<"empreendimento" | "unidade" | "torre" | "vaga" | "vgv", string>;
+  equipe: { corretor1: string; corretor2: string; gerente: string };
   compradores: (C & { confianca: Record<keyof C, number>; trechos: Record<keyof C, string> })[];
   parcelas: { tipo: string; valor: number; vencimento: string; confianca: number; trecho: string }[];
 };
@@ -36,6 +41,8 @@ export type Extraido = {
 const PROMPT = `Você é um analista de cadastro imobiliário. Extraia do documento (proposta de compra, ficha ou documento pessoal) os dados abaixo.
 - Valores em reais como número (ex.: 850000.5). VGV = preço total do imóvel.
 - Parcelas: liste CADA parcela individualmente com tipo, valor e vencimento (YYYY-MM-DD). Se houver "N mensais de X a partir de DATA", expanda em N itens mensais consecutivos.
+- Compradores: nascimento em YYYY-MM-DD; estado civil (Solteiro, Casado, Divorciado, Viúvo, União Estável); profissão, nacionalidade, e-mail e telefone quando presentes.
+- Equipe: nomes do(s) corretor(es) e gerente de vendas citados no cabeçalho, rodapé ou campos de assinatura.
 - CPF no formato 000.000.000-00. Campos ausentes: string vazia ou 0. Arrays vazios se não houver dados.
 - Para cada campo informe "confianca" de 0 a 1: 1 = legível e inequívoco; 0.5–0.8 = parcialmente legível, inferido ou ambíguo; abaixo de 0.5 = ausente ou chutado. Campo vazio = 0. Seja rigoroso: dígitos borrados de CPF/RG ou valores somados por você devem ter confiança menor.
 - Para cada campo informe também "trecho(s)": a cópia LITERAL e curta (até ~12 palavras) do texto do documento de onde o dado saiu, exatamente como está escrito (mesma grafia, sem corrigir). Se não houver, string vazia.`;
@@ -50,14 +57,17 @@ export const extrairProposta = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) return { ok: false, erro: "Lovable AI não configurado." };
     const isPdf = data.mime === "application/pdf";
-    if (!isPdf && !data.mime.startsWith("image/")) return { ok: false, erro: "Envie um PDF ou uma imagem (JPG/PNG/WEBP)." };
-    const part = isPdf
+    const isTxt = data.mime === "text/plain";
+    if (!isPdf && !isTxt && !data.mime.startsWith("image/")) return { ok: false, erro: "Envie PDF, imagem (JPG/PNG/WEBP/GIF) ou TXT." };
+    const part = isTxt
+      ? { type: "input_text", text: `Conteúdo do arquivo ${data.filename}:\n\n${new TextDecoder().decode(Uint8Array.from(atob(data.base64), (c) => c.charCodeAt(0))).slice(0, 200_000)}` }
+      : isPdf
       ? { type: "input_file", filename: data.filename, file_data: `data:application/pdf;base64,${data.base64}` }
       : { type: "input_image", image_url: `data:${data.mime};base64,${data.base64}` };
     const tipo = data.tipoDoc || "Proposta";
     const pedido = tipo === "Proposta"
       ? "Extraia os dados desta proposta."
-      : `Este documento é do tipo "${tipo}" de um comprador. Extraia apenas os dados pessoais do comprador presentes nele (nome, CPF, RG, endereço, cônjuge). Deixe empreendimento/unidade/VGV vazios e parcelas como array vazio.`;
+      : `Este documento é do tipo "${tipo}" de um comprador. Extraia apenas os dados pessoais do comprador presentes nele (nome, CPF, RG, endereço, cônjuge, nascimento, estado civil, profissão, nacionalidade, e-mail, telefone). Deixe empreendimento/unidade/VGV e equipe vazios e parcelas como array vazio.`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
