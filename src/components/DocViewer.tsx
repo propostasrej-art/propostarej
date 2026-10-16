@@ -42,8 +42,11 @@ export function DocViewer({ file, trechos, ativo, onPick, rotulos }: {
   const [palavras, setPalavras] = useState<Palavra[]>([]);
   const [status, setStatus] = useState("Carregando documento...");
 
+  const [texto, setTexto] = useState<string | null>(null);
   useEffect(() => {
     let vivo = true;
+    if (file.type === "text/plain" || /\.txt$/i.test(file.name)) { setPaginas([]); setPalavras([]); setStatus(""); file.text().then((t) => vivo && setTexto(t)); return () => { vivo = false; }; }
+    setTexto(null);
     setPaginas([]); setPalavras([]); setStatus("Carregando documento...");
     (async () => {
       try {
@@ -96,6 +99,7 @@ export function DocViewer({ file, trechos, ativo, onPick, rotulos }: {
         ) : <div className="flex items-center gap-2 text-muted-foreground"><FileSearch className="h-4 w-4" />Clique em um campo da ficha ou em um destaque do documento.</div>}
       </div>
       <div className="max-h-[75vh] space-y-3 overflow-auto rounded-lg border bg-muted p-2">
+        {texto !== null && <pre className="whitespace-pre-wrap rounded bg-card p-3 font-mono text-xs">{texto}</pre>}
         {paginas.map((pg, i) => (
           <div key={i} className="relative w-full overflow-hidden rounded bg-card shadow-sm">
             <img src={pg.src} alt={`Página ${i + 1}`} className="block w-full" />
@@ -107,7 +111,7 @@ export function DocViewer({ file, trechos, ativo, onPick, rotulos }: {
             )))}
           </div>
         ))}
-        {!paginas.length && <div className="grid h-60 place-items-center text-xs text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /></div>}
+        {!paginas.length && texto === null && <div className="grid h-60 place-items-center text-xs text-muted-foreground"><Loader2 className="h-5 w-5 animate-spin" /></div>}
       </div>
     </div>
   );
