@@ -44,6 +44,7 @@ export const extrairProposta = createServerFn({ method: "POST" })
   .middleware([requireSupabaseAuth])
   .inputValidator((i: unknown) => z.object({
     filename: z.string().max(200), mime: z.string().max(100), base64: z.string().min(10).max(14_000_000),
+    tipoDoc: z.string().max(60).optional(),
   }).parse(i))
   .handler(async ({ data }): Promise<{ ok: true; dados: Extraido } | { ok: false; erro: string }> => {
     const key = process.env["LOVABLE_API_KEY"];
@@ -53,6 +54,10 @@ export const extrairProposta = createServerFn({ method: "POST" })
     const part = isPdf
       ? { type: "input_file", filename: data.filename, file_data: `data:application/pdf;base64,${data.base64}` }
       : { type: "input_image", image_url: `data:${data.mime};base64,${data.base64}` };
+    const tipo = data.tipoDoc || "Proposta";
+    const pedido = tipo === "Proposta"
+      ? "Extraia os dados desta proposta."
+      : `Este documento é do tipo "${tipo}" de um comprador. Extraia apenas os dados pessoais do comprador presentes nele (nome, CPF, RG, endereço, cônjuge). Deixe empreendimento/unidade/VGV vazios e parcelas como array vazio.`;
 
     const res = await fetch("https://ai.gateway.lovable.dev/v1/responses", {
       method: "POST",
@@ -61,7 +66,7 @@ export const extrairProposta = createServerFn({ method: "POST" })
         model: "openai/gpt-6-astra", stream: true, store: false,
         reasoning: { effort: "low", summary: "auto" }, include: ["reasoning.encrypted_content"],
         instructions: PROMPT,
-        input: [{ role: "user", content: [{ type: "input_text", text: "Extraia os dados desta proposta." }, part] }],
+        input: [{ role: "user", content: [{ type: "input_text", text: pedido }, part] }],
         text: { format: { type: "json_schema", name: "proposta", strict: true, schema } },
       }),
     });

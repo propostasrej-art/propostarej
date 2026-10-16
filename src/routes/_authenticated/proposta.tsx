@@ -11,8 +11,18 @@ import { useServerFn } from "@tanstack/react-start";
 import { extrairProposta } from "@/lib/extracao.functions";
 import { nivel, pendentes, precisaRevisao, LIMIAR_REVISAO } from "@/lib/confianca";
 import { cn } from "@/lib/utils";
-import { Check, ShieldAlert } from "lucide-react";
+import { Check, ShieldAlert, FileText } from "lucide-react";
 import { DocViewer } from "@/components/DocViewer";
+
+type Doc = { id: string; slot: string; tipo: string; file: File; trechos: Record<string, string>; rotulos: Record<string, string> };
+const SLOTS_FIXOS = ["Documento de identidade (RG/CNH)", "CPF", "Comprovante de residência", "Comprovante de estado civil", "Proposta"];
+// Campos do comprador que cada tipo de documento pode preencher
+const CAMPOS_DOC: Record<string, string[]> = {
+  "Documento de identidade (RG/CNH)": ["nome", "cpf", "rg"],
+  CPF: ["nome", "cpf"],
+  "Comprovante de residência": ["nome", "endereco"],
+  "Comprovante de estado civil": ["nome", "cpf", "conjuge"],
+};
 
 export const Route = createFileRoute("/_authenticated/proposta")({
   validateSearch: (s: Record<string, unknown>) => ({ id: typeof s["id"] === "string" ? (s["id"] as string) : undefined }),
@@ -30,16 +40,21 @@ function Ficha() {
   const nav = useNavigate();
   const s = useStore((x) => x);
   const [p, setP] = useState<Proposta>(vazia);
-  const [ocr, setOcr] = useState(false);
+  const [ocr, setOcr] = useState<string | null>(null);
   const extrair = useServerFn(extrairProposta);
   const [conf, setConf] = useState<Record<string, number>>({});
-  const [arquivo, setArquivo] = useState<File | null>(null);
-  const [trechos, setTrechos] = useState<Record<string, string>>({});
-  const [rotulos, setRotulos] = useState<Record<string, string>>({});
+  const [docs, setDocs] = useState<Doc[]>([]);
+  const [docAtivo, setDocAtivo] = useState<string | null>(null);
+  const [origem, setOrigem] = useState<Record<string, string>>({});
+  const [extras, setExtras] = useState<string[]>([]);
   const [ativo, setAtivo] = useState<string | null>(null);
-  const marcar = (e: React.SyntheticEvent) => { const k = (e.target as HTMLElement).closest("[data-k]")?.getAttribute("data-k"); if (k) setAtivo(k); };
+  const atual = docs.find((d) => d.id === docAtivo) ?? null;
+  const arquivo = atual?.file ?? null;
+  const trechos = atual?.trechos ?? {};
+  const rotulos = atual?.rotulos ?? {};
+  const marcar = (e: React.SyntheticEvent) => { const k = (e.target as HTMLElement).closest("[data-k]")?.getAttribute("data-k"); if (k) { setAtivo(k); if (origem[k]) setDocAtivo(origem[k]!); } };
   const pick = (k: string) => { setAtivo(k); const el = document.querySelector<HTMLElement>(`[data-k="${k}"]`); (el?.matches("input,select") ? el : el?.querySelector<HTMLElement>("input,select"))?.focus({ preventScroll: false }); };
-  useEffect(() => { const f = id && getState().propostas.find((x) => x.id === id); setP(f ? structuredClone(f) : vazia()); setConf({}); setArquivo(null); setTrechos({}); setAtivo(null); }, [id]);
+  useEffect(() => { const f = id && getState().propostas.find((x) => x.id === id); setP(f ? structuredClone(f) : vazia()); setConf({}); setDocs([]); setDocAtivo(null); setOrigem({}); setExtras([]); setAtivo(null); }, [id]);
   const revisar = (k: string) => setConf((c) => { if (!(k in c)) return c; const n = { ...c }; delete n[k]; return n; });
   const rc = (k: string) => (precisaRevisao(conf[k]) ? (nivel(conf[k]!) === "baixa" ? "border-destructive bg-destructive/5 ring-2 ring-destructive/20" : "border-warn bg-warn/10 ring-2 ring-warn/25") : "");
   const L = (label: string, k: string) => {
@@ -65,44 +80,71 @@ function Ficha() {
     toast.success("Proposta salva");
     nav({ to: "/proposta", search: { id: p.id } });
   }
-  async function onFile(f?: File) {
+  async function onFile(f: File | undefined, tipo: string, slot: string) {
     if (!f) return;
     if (f.size > 10 * 1024 * 1024) { toast.error("Arquivo acima de 10 MB."); return; }
-    setOcr(true);
+    setOcr(slot);
     try {
       const base64 = await new Promise<string>((ok, err) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] ?? ""); r.onerror = err; r.readAsDataURL(f); });
-      const out = await extrair({ data: { filename: f.name, mime: f.type || "application/pdf", base64 } });
+      const out = await extrair({ data: { filename: f.name, mime: f.type || "application/pdf", base64, tipoDoc: tipo } });
       if (!out.ok) { toast.error(out.erro); return; }
       const d = out.dados;
-      const nomeEmp = d.empreendimento.toLowerCase();
-      const emp = nomeEmp && s.empreendimentos.find((e) => e.nome.toLowerCase().includes(nomeEmp) || nomeEmp.includes(e.nome.toLowerCase()));
-      const novas = d.parcelas.map((x) => ({ ...x, id: uid() }));
-      const nc: Record<string, number> = { ...d.confianca, empreendimento: emp ? d.confianca.empreendimento : 0 };
-      d.compradores.forEach((c, i) => Object.entries(c.confianca).forEach(([k, v]) => { if (k !== "conjuge" || c.conjuge) nc[`c${i}.${k}`] = v; }));
-      novas.forEach((x) => (nc[`p:${x.id}`] = x.confianca));
-      setConf(nc);
-      const tr: Record<string, string> = { ...d.trechos };
-      const rot: Record<string, string> = { empreendimento: "Empreendimento", unidade: "Unidade", torre: "Torre", vaga: "Vaga", vgv: "Valor VGV" };
+      const isProp = tipo === "Proposta";
+      const docId = uid();
+      const nc: Record<string, number> = {};
+      const tr: Record<string, string> = {};
+      const rot: Record<string, string> = {};
       const nomes: Record<string, string> = { nome: "Nome", cpf: "CPF", rg: "RG", endereco: "Endereço", conjuge: "Cônjuge" };
-      d.compradores.forEach((c, i) => Object.entries(c.trechos).forEach(([k, v]) => { tr[`c${i}.${k}`] = v; rot[`c${i}.${k}`] = `Comprador ${i + 1} · ${nomes[k] ?? k}`; }));
-      novas.forEach((x, i) => { tr[`p:${x.id}`] = x.trecho; rot[`p:${x.id}`] = `Parcela ${i + 1} · ${x.tipo}`; });
-      setTrechos(tr); setRotulos(rot); setArquivo(f); setAtivo(null);
+      const permitidos = CAMPOS_DOC[tipo] ?? ["nome", "cpf", "rg", "endereco", "conjuge"];
+      let emp: { id: string } | undefined | "" = undefined;
+      let novas: { id: string; tipo: string; valor: number; vencimento: string; confianca: number; trecho: string }[] = [];
+      if (isProp) {
+        const nomeEmp = d.empreendimento.toLowerCase();
+        emp = nomeEmp && s.empreendimentos.find((e) => e.nome.toLowerCase().includes(nomeEmp) || nomeEmp.includes(e.nome.toLowerCase()));
+        novas = d.parcelas.map((x) => ({ ...x, id: uid() }));
+        (["empreendimento", "unidade", "torre", "vaga", "vgv"] as const).forEach((k) => { nc[k] = k === "empreendimento" && !emp ? 0 : d.confianca[k]; tr[k] = d.trechos[k]; });
+        Object.assign(rot, { empreendimento: "Empreendimento", unidade: "Unidade", torre: "Torre", vaga: "Vaga", vgv: "Valor VGV" });
+        novas.forEach((x, i) => { nc[`p:${x.id}`] = x.confianca; tr[`p:${x.id}`] = x.trecho; rot[`p:${x.id}`] = `Parcela ${i + 1} · ${x.tipo}`; });
+      }
+      // Casa cada comprador extraído com um existente (CPF ou nome), senão usa o 1º vazio / novo
+      const dig = (v: string) => v.replace(/\D/g, "");
+      const compr = p.compradores.map((c) => ({ ...c }));
+      d.compradores.forEach((c, n) => {
+        let i = compr.findIndex((x) => (dig(c.cpf) && dig(x.cpf) === dig(c.cpf)) || (c.nome && x.nome.trim().toLowerCase() === c.nome.trim().toLowerCase()));
+        if (i < 0) i = !isProp && n === 0 ? 0 : compr.findIndex((x) => !x.nome && !x.cpf);
+        if (i < 0) { compr.push({ nome: "", cpf: "", rg: "", endereco: "", conjuge: "" }); i = compr.length - 1; }
+        const alvo = compr[i]!;
+        (Object.keys(nomes) as (keyof typeof alvo)[]).forEach((k) => {
+          if (!permitidos.includes(k) || !c[k]) return;
+          alvo[k] = c[k];
+          nc[`c${i}.${k}`] = c.confianca[k];
+          tr[`c${i}.${k}`] = c.trechos[k];
+          rot[`c${i}.${k}`] = `Comprador ${i + 1} · ${nomes[k]}`;
+        });
+      });
+      setConf((c) => ({ ...c, ...nc }));
+      setOrigem((o) => ({ ...o, ...Object.fromEntries(Object.keys(tr).map((k) => [k, docId])) }));
+      setDocs((ds) => [...ds.filter((x) => x.slot !== slot), { id: docId, slot, tipo, file: f, trechos: tr, rotulos: rot }]);
+      setDocAtivo(docId); setAtivo(null);
       setP((cur) => ({
         ...cur,
-        empreendimentoId: emp ? emp.id : cur.empreendimentoId,
-        unidade: d.unidade || cur.unidade, torre: d.torre || cur.torre, vaga: d.vaga || cur.vaga, vgv: d.vgv || cur.vgv,
-        compradores: d.compradores.length ? d.compradores.map(({ confianca: _c, ...c }) => c) : cur.compradores,
-        parcelas: novas.length
-          ? novas.map((x) => ({ id: x.id, tipo: (TIPOS_PARCELA as readonly string[]).includes(x.tipo) ? (x.tipo as TipoParcela) : "Mensal", valor: x.valor, vencimento: /^\d{4}-\d{2}-\d{2}$/.test(x.vencimento) ? x.vencimento : cur.createdAt }))
-          : cur.parcelas,
+        compradores: compr,
+        ...(isProp ? {
+          empreendimentoId: emp ? emp.id : cur.empreendimentoId,
+          unidade: d.unidade || cur.unidade, torre: d.torre || cur.torre, vaga: d.vaga || cur.vaga, vgv: d.vgv || cur.vgv,
+          parcelas: novas.length
+            ? novas.map((x) => ({ id: x.id, tipo: (TIPOS_PARCELA as readonly string[]).includes(x.tipo) ? (x.tipo as TipoParcela) : "Mensal", valor: x.valor, vencimento: /^\d{4}-\d{2}-\d{2}$/.test(x.vencimento) ? x.vencimento : cur.createdAt }))
+            : cur.parcelas,
+        } : {}),
       }));
       const np = pendentes(nc).length;
-      if (np) toast.warning(`Dados extraídos de "${f.name}". ${np} campo(s) precisam de revisão.`);
-      else toast.success(`Dados extraídos de "${f.name}" com alta confiança.`);
+      if (np) toast.warning(`${tipo}: dados extraídos de "${f.name}". ${np} campo(s) precisam de revisão.`);
+      else toast.success(`${tipo}: dados extraídos de "${f.name}".`);
     } catch {
       toast.error("Não foi possível processar o arquivo.");
-    } finally { setOcr(false); }
+    } finally { setOcr(null); }
   }
+  const slots = [...SLOTS_FIXOS.map((t) => ({ slot: t, tipo: t, extra: false })), ...extras.map((e, i) => ({ slot: e, tipo: `Documento adicional ${i + 1}`, extra: true }))];
 
   return (
     <div>
@@ -170,17 +212,32 @@ function Ficha() {
           </Card>
         </div>
         <div className="space-y-6">
-          <Card title="Upload & OCR">
-            <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-8 text-center hover:border-primary">
-              <Upload className="h-6 w-6 text-primary" />
-              <span className="text-sm font-medium">{ocr ? "Lendo documento com IA..." : "Enviar proposta (PDF/imagem)"}</span>
-              <span className="text-xs text-muted-foreground">Os campos são preenchidos automaticamente</span>
-              <input type="file" disabled={ocr} accept=".pdf,image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
-            </label>
+          <Card title="Documentos para extração" action={<Btn variant="ghost" onClick={() => setExtras((e) => [...e, uid()])}><Plus className="h-4 w-4" />Adicionar documento</Btn>}>
+            <div className="space-y-2">
+              {slots.map(({ slot, tipo, extra }) => {
+                const d = docs.find((x) => x.slot === slot);
+                const lendo = ocr === slot;
+                return (
+                  <div key={slot} className={cn("flex items-center gap-3 rounded-lg border p-2.5", d && docAtivo === d.id && "border-primary bg-primary/5")}>
+                    <FileText className={cn("h-5 w-5 shrink-0", d ? "text-success" : "text-muted-foreground")} />
+                    <button type="button" disabled={!d} onClick={() => d && setDocAtivo(d.id)} className="min-w-0 flex-1 text-left">
+                      <div className="text-sm font-medium">{tipo}</div>
+                      <div className="truncate text-xs text-muted-foreground">{lendo ? "Lendo com IA..." : d ? d.file.name : "Nenhum arquivo"}</div>
+                    </button>
+                    <label className={cn("inline-flex cursor-pointer items-center gap-1 rounded-lg border bg-card px-2.5 py-1.5 text-xs font-medium hover:bg-muted", ocr && "pointer-events-none opacity-50")}>
+                      <Upload className="h-3.5 w-3.5" />{d ? "Trocar" : "Enviar"}
+                      <input type="file" disabled={!!ocr} accept=".pdf,image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => { onFile(e.target.files?.[0], extra ? "Documento adicional" : tipo, slot); e.target.value = ""; }} />
+                    </label>
+                    {extra && <Btn variant="danger" className="px-2" onClick={() => { setExtras((x) => x.filter((y) => y !== slot)); setDocs((ds) => ds.filter((y) => y.slot !== slot)); }}><Trash2 className="h-4 w-4" /></Btn>}
+                  </div>
+                );
+              })}
+              <p className="pt-1 text-xs text-muted-foreground">PDF ou imagem até 10 MB. Os campos da ficha são preenchidos automaticamente.</p>
+            </div>
           </Card>
           {arquivo && (
-            <Card title="Documento de origem" className="xl:sticky xl:top-20">
-              <DocViewer file={arquivo} trechos={trechos} ativo={ativo} onPick={pick} rotulos={rotulos} />
+            <Card title={`Documento de origem · ${atual?.tipo ?? ""}`} className="xl:sticky xl:top-20">
+              <DocViewer key={atual?.id} file={arquivo} trechos={trechos} ativo={ativo} onPick={pick} rotulos={rotulos} />
             </Card>
           )}
           {Object.keys(conf).length > 0 && (
