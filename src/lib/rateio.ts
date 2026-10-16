@@ -41,23 +41,23 @@ export function calcularRateio(vgv: number, participantes: ParticipanteIn[], par
     // Cascata: distribui proporcionalmente entre ativos; excedente de quem atinge o teto volta ao pool
     let guard = 0;
     while (pool > 0.004 && guard++ < 50) {
-      const ativos = participantes.filter((p) => tetos[p.id] - pagos[p.id] > 0.004);
+      const ativos = participantes.filter((p) => tetos[p.id]! - pagos[p.id]! > 0.004);
       if (!ativos.length) break;
       const somaPct = ativos.reduce((a, p) => a + p.pct, 0);
       let distribuido = 0;
       for (const p of ativos) {
         const cota = (pool * p.pct) / somaPct;
-        const paga = Math.min(cota, tetos[p.id] - pagos[p.id]);
-        pagos[p.id] += paga; pagamentos[p.id] = (pagamentos[p.id] ?? 0) + paga; distribuido += paga;
-        if (tetos[p.id] - pagos[p.id] <= 0.004 && !quitacao[p.id]) quitacao[p.id] = parcela.vencimento;
+        const paga = Math.min(cota, tetos[p.id]! - pagos[p.id]!);
+        pagos[p.id]! += paga; pagamentos[p.id] = (pagamentos[p.id] ?? 0) + paga; distribuido += paga;
+        if (tetos[p.id]! - pagos[p.id]! <= 0.004 && !quitacao[p.id]) quitacao[p.id] = parcela.vencimento;
       }
       pool -= distribuido;
     }
-    Object.keys(pagamentos).forEach((k) => (pagamentos[k] = r2(pagamentos[k])));
+    Object.keys(pagamentos).forEach((k) => (pagamentos[k] = r2(pagamentos[k]!)));
     acumulado = r2(acumulado + poolInicial);
     if (!liberacao && totalComissao > 0 && acumulado >= totalComissao - 0.01) liberacao = parcela.vencimento;
     eventos.push({ parcela, pool: poolInicial, pagamentos, acumuladoTotal: acumulado, liquidaFluxo: r2(parcela.valor - poolInicial) });
   }
-  Object.keys(pagos).forEach((k) => (pagos[k] = r2(pagos[k])));
+  Object.keys(pagos).forEach((k) => (pagos[k] = r2(pagos[k]!)));
   return { totalComissao, tetos, pagos, eventos, quitacao, liberacao, saldoPendente: r2(totalComissao - acumulado) };
 }
