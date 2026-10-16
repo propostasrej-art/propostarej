@@ -5,17 +5,21 @@ const TIPOS = ["Sinal/Ato", "Mensal", "Semestral", "Chaves", "Financiamento Banc
 const str = { type: "string" };
 const schema = {
   type: "object", additionalProperties: false,
-  required: ["empreendimento", "unidade", "torre", "vaga", "vgv", "compradores", "parcelas", "confianca"],
+  required: ["empreendimento", "unidade", "torre", "vaga", "vgv", "compradores", "parcelas", "confianca", "trechos"],
   properties: {
     empreendimento: str, unidade: str, torre: str, vaga: str, vgv: { type: "number" },
     confianca: { type: "object", additionalProperties: false, required: ["empreendimento", "unidade", "torre", "vaga", "vgv"],
       properties: { empreendimento: { type: "number", description: "confiança 0 a 1" }, unidade: { type: "number", description: "confiança 0 a 1" }, torre: { type: "number", description: "confiança 0 a 1" }, vaga: { type: "number", description: "confiança 0 a 1" }, vgv: { type: "number", description: "confiança 0 a 1" } } },
-    compradores: { type: "array", items: { type: "object", additionalProperties: false, required: ["nome", "cpf", "rg", "endereco", "conjuge", "confianca"],
+    trechos: { type: "object", additionalProperties: false, required: ["empreendimento", "unidade", "torre", "vaga", "vgv"],
+      properties: { empreendimento: { type: "string", description: "trecho literal do documento usado" }, unidade: { type: "string", description: "trecho literal do documento usado" }, torre: { type: "string", description: "trecho literal do documento usado" }, vaga: { type: "string", description: "trecho literal do documento usado" }, vgv: { type: "string", description: "trecho literal do documento usado" } } },
+    compradores: { type: "array", items: { type: "object", additionalProperties: false, required: ["nome", "cpf", "rg", "endereco", "conjuge", "confianca", "trechos"],
       properties: { nome: str, cpf: str, rg: str, endereco: str, conjuge: str,
+        trechos: { type: "object", additionalProperties: false, required: ["nome", "cpf", "rg", "endereco", "conjuge"],
+          properties: { nome: { type: "string", description: "trecho literal do documento usado" }, cpf: { type: "string", description: "trecho literal do documento usado" }, rg: { type: "string", description: "trecho literal do documento usado" }, endereco: { type: "string", description: "trecho literal do documento usado" }, conjuge: { type: "string", description: "trecho literal do documento usado" } } },
         confianca: { type: "object", additionalProperties: false, required: ["nome", "cpf", "rg", "endereco", "conjuge"],
           properties: { nome: { type: "number", description: "confiança 0 a 1" }, cpf: { type: "number", description: "confiança 0 a 1" }, rg: { type: "number", description: "confiança 0 a 1" }, endereco: { type: "number", description: "confiança 0 a 1" }, conjuge: { type: "number", description: "confiança 0 a 1" } } } } } },
-    parcelas: { type: "array", items: { type: "object", additionalProperties: false, required: ["tipo", "valor", "vencimento", "confianca"],
-      properties: { tipo: { type: "string", enum: TIPOS }, valor: { type: "number" }, vencimento: { type: "string", description: "YYYY-MM-DD" }, confianca: { type: "number", description: "confiança 0 a 1" } } } },
+    parcelas: { type: "array", items: { type: "object", additionalProperties: false, required: ["tipo", "valor", "vencimento", "confianca", "trecho"],
+      properties: { tipo: { type: "string", enum: TIPOS }, valor: { type: "number" }, vencimento: { type: "string", description: "YYYY-MM-DD" }, confianca: { type: "number", description: "confiança 0 a 1" }, trecho: { type: "string", description: "trecho literal do documento usado" } } } },
   },
 };
 
@@ -23,15 +27,17 @@ type C = { nome: string; cpf: string; rg: string; endereco: string; conjuge: str
 export type Extraido = {
   empreendimento: string; unidade: string; torre: string; vaga: string; vgv: number;
   confianca: Record<"empreendimento" | "unidade" | "torre" | "vaga" | "vgv", number>;
-  compradores: (C & { confianca: Record<keyof C, number> })[];
-  parcelas: { tipo: string; valor: number; vencimento: string; confianca: number }[];
+  trechos: Record<"empreendimento" | "unidade" | "torre" | "vaga" | "vgv", string>;
+  compradores: (C & { confianca: Record<keyof C, number>; trechos: Record<keyof C, string> })[];
+  parcelas: { tipo: string; valor: number; vencimento: string; confianca: number; trecho: string }[];
 };
 
 const PROMPT = `Você é um analista de cadastro imobiliário. Extraia do documento (proposta de compra, ficha ou documento pessoal) os dados abaixo.
 - Valores em reais como número (ex.: 850000.5). VGV = preço total do imóvel.
 - Parcelas: liste CADA parcela individualmente com tipo, valor e vencimento (YYYY-MM-DD). Se houver "N mensais de X a partir de DATA", expanda em N itens mensais consecutivos.
 - CPF no formato 000.000.000-00. Campos ausentes: string vazia ou 0. Arrays vazios se não houver dados.
-- Para cada campo informe "confianca" de 0 a 1: 1 = legível e inequívoco; 0.5–0.8 = parcialmente legível, inferido ou ambíguo; abaixo de 0.5 = ausente ou chutado. Campo vazio = 0. Seja rigoroso: dígitos borrados de CPF/RG ou valores somados por você devem ter confiança menor.`;
+- Para cada campo informe "confianca" de 0 a 1: 1 = legível e inequívoco; 0.5–0.8 = parcialmente legível, inferido ou ambíguo; abaixo de 0.5 = ausente ou chutado. Campo vazio = 0. Seja rigoroso: dígitos borrados de CPF/RG ou valores somados por você devem ter confiança menor.
+- Para cada campo informe também "trecho(s)": a cópia LITERAL e curta (até ~12 palavras) do texto do documento de onde o dado saiu, exatamente como está escrito (mesma grafia, sem corrigir). Se não houver, string vazia.`;
 
 export const extrairProposta = createServerFn({ method: "POST" })
   .inputValidator((i: unknown) => z.object({
