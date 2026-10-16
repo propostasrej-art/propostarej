@@ -202,17 +202,32 @@ function Ficha() {
           </Card>
         </div>
         <div className="space-y-6">
-          <Card title="Upload & OCR">
-            <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-8 text-center hover:border-primary">
-              <Upload className="h-6 w-6 text-primary" />
-              <span className="text-sm font-medium">{ocr ? "Lendo documento com IA..." : "Enviar proposta (PDF/imagem)"}</span>
-              <span className="text-xs text-muted-foreground">Os campos são preenchidos automaticamente</span>
-              <input type="file" disabled={ocr} accept=".pdf,image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
-            </label>
+          <Card title="Documentos para extração" action={<Btn variant="ghost" onClick={() => setExtras((e) => [...e, uid()])}><Plus className="h-4 w-4" />Adicionar documento</Btn>}>
+            <div className="space-y-2">
+              {slots.map(({ slot, tipo, extra }) => {
+                const d = docs.find((x) => x.slot === slot);
+                const lendo = ocr === slot;
+                return (
+                  <div key={slot} className={cn("flex items-center gap-3 rounded-lg border p-2.5", d && docAtivo === d.id && "border-primary bg-primary/5")}>
+                    <FileText className={cn("h-5 w-5 shrink-0", d ? "text-success" : "text-muted-foreground")} />
+                    <button type="button" disabled={!d} onClick={() => d && setDocAtivo(d.id)} className="min-w-0 flex-1 text-left">
+                      <div className="text-sm font-medium">{tipo}</div>
+                      <div className="truncate text-xs text-muted-foreground">{lendo ? "Lendo com IA..." : d ? d.file.name : "Nenhum arquivo"}</div>
+                    </button>
+                    <label className={cn("inline-flex cursor-pointer items-center gap-1 rounded-lg border bg-card px-2.5 py-1.5 text-xs font-medium hover:bg-muted", ocr && "pointer-events-none opacity-50")}>
+                      <Upload className="h-3.5 w-3.5" />{d ? "Trocar" : "Enviar"}
+                      <input type="file" disabled={!!ocr} accept=".pdf,image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => { onFile(e.target.files?.[0], extra ? "Documento adicional" : tipo, slot); e.target.value = ""; }} />
+                    </label>
+                    {extra && <Btn variant="danger" className="px-2" onClick={() => { setExtras((x) => x.filter((y) => y !== slot)); setDocs((ds) => ds.filter((y) => y.slot !== slot)); }}><Trash2 className="h-4 w-4" /></Btn>}
+                  </div>
+                );
+              })}
+              <p className="pt-1 text-xs text-muted-foreground">PDF ou imagem até 10 MB. Os campos da ficha são preenchidos automaticamente.</p>
+            </div>
           </Card>
           {arquivo && (
-            <Card title="Documento de origem" className="xl:sticky xl:top-20">
-              <DocViewer file={arquivo} trechos={trechos} ativo={ativo} onPick={pick} rotulos={rotulos} />
+            <Card title={`Documento de origem · ${atual?.tipo ?? ""}`} className="xl:sticky xl:top-20">
+              <DocViewer key={atual?.id} file={arquivo} trechos={trechos} ativo={ativo} onPick={pick} rotulos={rotulos} />
             </Card>
           )}
           {Object.keys(conf).length > 0 && (
