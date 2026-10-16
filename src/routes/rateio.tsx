@@ -74,7 +74,7 @@ function Rateio() {
       </Card>
 
       <Card title="Cronograma de rateio (evento a evento)" className="mt-6">
-        <div className="overflow-x-auto"><table className="w-full"><thead><tr><Th>Vencimento</Th><Th>Tipo</Th><Th>Parcela</Th><Th>Comissão</Th>{parts.map((x) => <Th key={x.id}>{x.nome.split(" ")[0]}</Th>)}<Th>Acumulado</Th><Th>Fluxo incorporador</Th></tr></thead><tbody>
+        <div className="overflow-x-auto"><table className="w-full"><thead><tr><Th>Vencimento</Th><Th>Tipo</Th><Th>Parcela</Th><Th>Comissão</Th>{parts.map((x) => <Th key={x.id}>{x.nome.split(" ")[0] ?? x.nome}</Th>)}<Th>Acumulado</Th><Th>Fluxo incorporador</Th></tr></thead><tbody>
           {res.eventos.map((e) => (<tr key={e.parcela.id} className={PROTEGIDAS.includes(e.parcela.tipo) ? "bg-muted/50" : ""}>
             <Td><Mono>{dt(e.parcela.vencimento)}</Mono></Td><Td>{e.parcela.tipo}</Td><Td><Mono>{brl(e.parcela.valor)}</Mono></Td><Td><Mono className="text-success">{brl(e.pool)}</Mono></Td>
             {parts.map((x) => <Td key={x.id}><Mono>{e.pagamentos[x.id] ? brl(e.pagamentos[x.id]) : "—"}</Mono></Td>)}

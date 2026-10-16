@@ -47,7 +47,7 @@ function Contrato() {
           <T title="Tabela 1 — Condição de Pagamento da Proposta" head={["Tipo", "Vencimento", "Valor"]} rows={p.parcelas.map((x) => [x.tipo, dt(x.vencimento), brl(x.valor)])} />
           <T title="Tabela 2 — Preço Líquido do Imóvel" head={["Descrição", "Valor"]} rows={[["Preço total (VGV)", brl(p.vgv)], ["(–) Comissão de corretagem", brl(res.totalComissao)], ["Preço líquido ao incorporador", brl(liquido)]]} />
           <T title="Tabela 3 — Comissões" head={["Participante", "%", "Valor"]} rows={[...parts.map((x) => [x.nome, pct(x.pct), brl(res.tetos[x.id])] as ReactNode[]), ["Total", pct(comissaoPct(p)), brl(res.totalComissao)] as ReactNode[]]} />
-          <T title="Tabela 4 — Cronograma de Rateio" head={["Vencimento", "Parcela", "Comissão", ...parts.map((x) => x.nome.split(" ")[0])]}
+          <T title="Tabela 4 — Cronograma de Rateio" head={["Vencimento", "Parcela", "Comissão", ...parts.map((x) => x.nome.split(" ")[0] ?? x.nome)]}
             rows={res.eventos.filter((e) => e.pool > 0 || !PROTEGIDAS.includes(e.parcela.tipo)).map((e) => [dt(e.parcela.vencimento), e.parcela.tipo, brl(e.pool), ...parts.map((x) => (e.pagamentos[x.id] ? brl(e.pagamentos[x.id]) : "—"))])} />
           <T title="Tabela 5 — Credenciais dos Participantes na Venda" head={["Nome", "Apelido", "CPF/CNPJ", "CRECI", "Cargo"]} rows={membros.map((m) => [m.nome, m.apelido, m.doc, m.creci, m.funcao])} />
           <p className="mt-5 text-justify">Fica eleito o foro da comarca do imóvel para dirimir quaisquer controvérsias oriundas deste instrumento.</p>
