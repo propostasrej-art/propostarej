@@ -9,7 +9,7 @@ import { brl, pct, uid } from "@/lib/format";
 import { meta, somaParcelas } from "@/lib/helpers";
 
 export const Route = createFileRoute("/proposta")({
-  validateSearch: (s: Record<string, unknown>) => ({ id: typeof s.id === "string" ? s.id : undefined }),
+  validateSearch: (s: Record<string, unknown>) => ({ id: typeof s["id"] === "string" ? (s["id"] as string) : undefined }),
   head: () => meta("Ficha da Proposta", "Cadastro e extração de dados de propostas imobiliárias."),
   component: Ficha,
 });

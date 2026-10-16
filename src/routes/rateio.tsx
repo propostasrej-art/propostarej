@@ -17,8 +17,9 @@ export const Route = createFileRoute("/rateio")({
 function Rateio() {
   const s = useStore((x) => x);
   const [id, setId] = useState(s.propostas[0]?.id ?? "");
-  const p = s.propostas.find((x) => x.id === id) ?? s.propostas[0];
-  if (!p) return <PageHeader title="Motor de Rateio" subtitle="Cadastre uma proposta primeiro." />;
+  const found = s.propostas.find((x) => x.id === id) ?? s.propostas[0];
+  if (!found) return <PageHeader title="Motor de Rateio" subtitle="Cadastre uma proposta primeiro." />;
+  const p = found;
   const { emp, parts, res } = rateioDaProposta(s, p);
   const membros = p.participantes.map((x) => s.membros.find((m) => m.id === x.membroId)!).filter(Boolean);
   const eventosComissao = res.eventos.filter((e) => e.pool > 0);
@@ -68,7 +69,7 @@ function Rateio() {
       <Card title="Tetos e situação por participante" className="mt-6">
         <div className="overflow-x-auto"><table className="w-full"><thead><tr><Th>Participante</Th><Th>%</Th><Th>Teto nominal</Th><Th>Recebido</Th><Th>Saldo</Th><Th>Quitação</Th></tr></thead><tbody>
           {parts.map((x) => (<tr key={x.id}><Td className="font-medium">{x.nome}</Td><Td><Mono>{pct(x.pct)}</Mono></Td><Td><Mono>{brl(res.tetos[x.id])}</Mono></Td>
-            <Td><Mono className="text-success">{brl(res.pagos[x.id])}</Mono></Td><Td><Mono>{brl(res.tetos[x.id] - res.pagos[x.id])}</Mono></Td><Td><Mono>{dt(res.quitacao[x.id])}</Mono></Td></tr>))}
+            <Td><Mono className="text-success">{brl(res.pagos[x.id])}</Mono></Td><Td><Mono>{brl((res.tetos[x.id] ?? 0) - (res.pagos[x.id] ?? 0))}</Mono></Td><Td><Mono>{dt(res.quitacao[x.id])}</Mono></Td></tr>))}
         </tbody></table></div>
       </Card>
 
