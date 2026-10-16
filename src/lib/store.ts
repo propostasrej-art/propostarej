@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import type { Retencao, TipoParcela } from "./rateio";
+import type { TipoParcelaCadastro } from "./tipos-parcela";
 
 export type Status = "Em Análise" | "Aprovada" | "Escriturada";
 export type Funcao = "Corretor" | "Gerente" | "Diretor Comercial" | "Jurídico" | "Imobiliária";
@@ -24,11 +25,11 @@ export interface Eu { id: string; email: string; papel: Papel | null }
 export interface State {
   propostas: Proposta[]; empreendimentos: Empreendimento[]; membros: Membro[]; envelopes: Envelope[];
   usuarios: Usuario[]; config: Config; webhookLog: { at: string; origem: string; payload: string }[];
-  eu: Eu | null; carregado: boolean;
+  eu: Eu | null; carregado: boolean; tiposParcela: TipoParcelaCadastro[];
 }
 
 const CONFIG_PADRAO: Config = { assinafyToken: "", asaasToken: "", sandbox: true, webhookSecret: "" };
-const vazio = (): State => ({ propostas: [], empreendimentos: [], membros: [], envelopes: [], usuarios: [], config: CONFIG_PADRAO, webhookLog: [], eu: null, carregado: false });
+const vazio = (): State => ({ propostas: [], empreendimentos: [], membros: [], envelopes: [], usuarios: [], config: CONFIG_PADRAO, webhookLog: [], eu: null, carregado: false, tiposParcela: [] });
 const toPapel = (r: string | null | undefined): Papel | null => (r === "admin" ? "Admin" : r === "gerente" ? "Gerente" : r === "corretor" ? "Corretor" : null);
 const fromPapel = (p: Papel) => p.toLowerCase() as "admin" | "gerente" | "corretor";
 
@@ -41,7 +42,7 @@ const emit = () => listeners.forEach((l) => l());
 export async function carregar() {
   const { data: u } = await supabase.auth.getUser();
   if (!u.user) { state = { ...vazio(), carregado: true }; emit(); return; }
-  const [roles, emp, mem, pro, env, conv, cfg, log] = await Promise.all([
+  const [roles, emp, mem, pro, env, conv, cfg, log, tipos] = await Promise.all([
     supabase.from("user_roles").select("role").eq("user_id", u.user.id),
     supabase.from("empreendimentos").select("dados").order("id"),
     supabase.from("membros").select("dados").order("id"),
@@ -50,6 +51,7 @@ export async function carregar() {
     supabase.from("convites").select("id,email,nome,papel").order("created_at"),
     supabase.from("config").select("dados").eq("id", 1).maybeSingle(),
     supabase.from("webhook_log").select("at,origem,payload").order("at", { ascending: false }).limit(20),
+    supabase.from("tipos_parcela").select("id,nome").order("created_at"),
   ]);
   const ordem = ["admin", "gerente", "corretor"];
   const role = (roles.data ?? []).map((r) => r.role).sort((a, b) => ordem.indexOf(a) - ordem.indexOf(b))[0];
@@ -63,6 +65,7 @@ export async function carregar() {
     config: { ...CONFIG_PADRAO, ...((cfg.data?.dados as unknown as Config) ?? {}) },
     webhookLog: log.data ?? [],
     carregado: true,
+    tiposParcela: tipos.data ?? [],
   };
   emit();
 }

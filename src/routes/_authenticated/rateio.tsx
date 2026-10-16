@@ -5,7 +5,8 @@ import { Btn, Card, Field, Input, Mono, PageHeader, Td, Th } from "@/components/
 import { PropostaPicker } from "@/components/PropostaPicker";
 import { CredenciaisTable } from "@/components/CredenciaisTable";
 import { setState, useStore } from "@/lib/store";
-import { PROTEGIDAS, TIPOS_PARCELA } from "@/lib/rateio";
+import { PROTEGIDAS } from "@/lib/rateio";
+import { nomesTiposParcela } from "@/lib/tipos-parcela";
 import { brl, download, dt, pct } from "@/lib/format";
 import { comissaoPct, meta, rateioDaProposta } from "@/lib/helpers";
 
@@ -58,7 +59,7 @@ function Rateio() {
           </div>
         </Card>
         <Card title={`Retenção por parcela — ${emp?.nome ?? ""}`} className="lg:col-span-2">
-          <div className="grid gap-3 sm:grid-cols-4">{TIPOS_PARCELA.map((t) => {
+          <div className="grid gap-3 sm:grid-cols-4">{nomesTiposParcela(s.tiposParcela, p.parcelas.map((parcela) => parcela.tipo)).map((t) => {
             const prot = PROTEGIDAS.includes(t);
             return <Field key={t} label={`${t}${prot ? " 🔒" : ""}`}><Input type="number" disabled={prot} className="font-mono" value={prot ? 0 : emp?.retencao[t] ?? 0} onChange={(e) => setRet(t, +e.target.value)} /></Field>;
           })}</div>
