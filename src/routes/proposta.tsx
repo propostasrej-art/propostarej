@@ -7,6 +7,8 @@ import { getState, setState, useStore, type Proposta, type Status } from "@/lib/
 import { TIPOS_PARCELA, type TipoParcela } from "@/lib/rateio";
 import { brl, pct, uid } from "@/lib/format";
 import { meta, somaParcelas } from "@/lib/helpers";
+import { useServerFn } from "@tanstack/react-start";
+import { extrairProposta } from "@/lib/extracao.functions";
 
 export const Route = createFileRoute("/proposta")({
   validateSearch: (s: Record<string, unknown>) => ({ id: typeof s["id"] === "string" ? (s["id"] as string) : undefined }),
@@ -25,6 +27,7 @@ function Ficha() {
   const s = useStore((x) => x);
   const [p, setP] = useState<Proposta>(vazia);
   const [ocr, setOcr] = useState(false);
+  const extrair = useServerFn(extrairProposta);
   useEffect(() => { const f = id && getState().propostas.find((x) => x.id === id); setP(f ? structuredClone(f) : vazia()); }, [id]);
 
   const up = (patch: Partial<Proposta>) => setP({ ...p, ...patch });
@@ -36,27 +39,30 @@ function Ficha() {
     toast.success("Proposta salva");
     nav({ to: "/proposta", search: { id: p.id } });
   }
-  function onFile(f?: File) {
+  async function onFile(f?: File) {
     if (!f) return;
+    if (f.size > 10 * 1024 * 1024) { toast.error("Arquivo acima de 10 MB."); return; }
     setOcr(true);
-    setTimeout(() => {
-      const vgv = 780000;
-      const hoje = new Date();
-      const dd = (m: number) => new Date(hoje.getFullYear(), hoje.getMonth() + m, 10).toISOString().slice(0, 10);
+    try {
+      const base64 = await new Promise<string>((ok, err) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] ?? ""); r.onerror = err; r.readAsDataURL(f); });
+      const out = await extrair({ data: { filename: f.name, mime: f.type || "application/pdf", base64 } });
+      if (!out.ok) { toast.error(out.erro); return; }
+      const d = out.dados;
+      const nomeEmp = d.empreendimento.toLowerCase();
+      const emp = nomeEmp && s.empreendimentos.find((e) => e.nome.toLowerCase().includes(nomeEmp) || nomeEmp.includes(e.nome.toLowerCase()));
       setP((cur) => ({
-        ...cur, unidade: "1507", torre: "C", vaga: "88", vgv,
-        compradores: [{ nome: "Mariana Souza Prado", cpf: "456.123.789-10", rg: "45.678.123-4", endereco: "R. Bela Cintra, 300 — São Paulo/SP", conjuge: "Diego Prado" }],
-        parcelas: [
-          { id: uid(), tipo: "Sinal/Ato", valor: 39000, vencimento: dd(0) },
-          ...Array.from({ length: 10 }, (_, i) => ({ id: uid(), tipo: "Mensal" as TipoParcela, valor: 7800, vencimento: dd(i + 1) })),
-          { id: uid(), tipo: "Chaves", valor: 39000, vencimento: dd(14) },
-          { id: uid(), tipo: "FGTS", valor: 46000, vencimento: dd(15) },
-          { id: uid(), tipo: "Financiamento Bancário", valor: 578000, vencimento: dd(15) },
-        ],
+        ...cur,
+        empreendimentoId: emp ? emp.id : cur.empreendimentoId,
+        unidade: d.unidade || cur.unidade, torre: d.torre || cur.torre, vaga: d.vaga || cur.vaga, vgv: d.vgv || cur.vgv,
+        compradores: d.compradores.length ? d.compradores : cur.compradores,
+        parcelas: d.parcelas.length
+          ? d.parcelas.map((x) => ({ id: uid(), tipo: (TIPOS_PARCELA as readonly string[]).includes(x.tipo) ? (x.tipo as TipoParcela) : "Mensal", valor: x.valor, vencimento: /^\d{4}-\d{2}-\d{2}$/.test(x.vencimento) ? x.vencimento : cur.createdAt }))
+          : cur.parcelas,
       }));
-      setOcr(false);
-      toast.success(`OCR concluído: dados extraídos de "${f.name}"`);
-    }, 1400);
+      toast.success(`Dados extraídos de "${f.name}". Revise antes de salvar.`);
+    } catch {
+      toast.error("Não foi possível processar o arquivo.");
+    } finally { setOcr(false); }
   }
 
   return (
@@ -127,9 +133,9 @@ function Ficha() {
           <Card title="Upload & OCR">
             <label className="flex cursor-pointer flex-col items-center gap-2 rounded-lg border-2 border-dashed p-8 text-center hover:border-primary">
               <Upload className="h-6 w-6 text-primary" />
-              <span className="text-sm font-medium">{ocr ? "Processando OCR..." : "Enviar proposta (PDF/imagem)"}</span>
+              <span className="text-sm font-medium">{ocr ? "Lendo documento com IA..." : "Enviar proposta (PDF/imagem)"}</span>
               <span className="text-xs text-muted-foreground">Os campos são preenchidos automaticamente</span>
-              <input type="file" accept=".pdf,image/*" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
+              <input type="file" disabled={ocr} accept=".pdf,image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
             </label>
           </Card>
           <Card title="Validador de VGV">
