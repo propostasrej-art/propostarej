@@ -5,6 +5,7 @@ import { Btn, PageHeader } from "@/components/kit";
 import { PropostaPicker } from "@/components/PropostaPicker";
 import { useStore } from "@/lib/store";
 import { PROTEGIDAS } from "@/lib/rateio";
+import { agruparParcelas, totalLinha } from "@/lib/parcelas-tabela";
 import { brl, dt, pct } from "@/lib/format";
 import { comissaoPct, meta, rateioDaProposta } from "@/lib/helpers";
 
@@ -44,7 +45,7 @@ function Contrato() {
           <p className="mt-2 text-justify"><b>CONTRATADA:</b> {imob?.nome}, inscrita no CNPJ <span className="font-mono">{imob?.doc}</span>, {imob?.creci}, doravante denominada IMOBILIÁRIA.</p>
           <p className="mt-2 text-justify"><b>OBJETO:</b> intermediação da aquisição da unidade <b>{p.unidade}</b>, torre <b>{p.torre}</b>, vaga <b>{p.vaga}</b>, do empreendimento <b>{emp?.nome}</b>, situado em {emp?.endereco}, incorporado por {emp?.construtora}, pelo preço total de <span className="font-mono font-bold">{brl(p.vgv)}</span>.</p>
           <p className="mt-2 text-justify"><b>CLÁUSULA DE REMUNERAÇÃO:</b> pelos serviços de corretagem, é devida a comissão de <span className="font-mono">{pct(comissaoPct(p))}</span> sobre o valor da venda, totalizando <span className="font-mono">{brl(res.totalComissao)}</span>, rateada entre os participantes conforme Tabelas 3 e 4, sendo devida ainda que o negócio não se efetive em virtude de arrependimento das partes (art. 725 do CC). Parcelas de Financiamento Bancário, FGTS e Subsídio não sofrem dedução.</p>
-          <T title="Tabela 1 — Condição de Pagamento da Proposta" head={["Tipo", "Vencimento", "Valor"]} rows={p.parcelas.map((x) => [x.tipo, dt(x.vencimento), brl(x.valor)])} />
+          <T title="Tabela 1 — Condição de Pagamento da Proposta" head={["Quantidade", "Tipo de parcela", "Valor Unitário", "1.º vencimento", "Valor Total da Parcela"]} rows={agruparParcelas(p.parcelas).map((l) => [String(l.quantidade), l.tipo, brl(l.valor), dt(l.vencimento), brl(totalLinha(l))])} />
           <T title="Tabela 2 — Preço Líquido do Imóvel" head={["Descrição", "Valor"]} rows={[["Preço total (VGV)", brl(p.vgv)], ["(–) Comissão de corretagem", brl(res.totalComissao)], ["Preço líquido ao incorporador", brl(liquido)]]} />
           <T title="Tabela 3 — Comissões" head={["Participante", "%", "Valor"]} rows={[...parts.map((x) => [x.nome, pct(x.pct), brl(res.tetos[x.id])] as ReactNode[]), ["Total", pct(comissaoPct(p)), brl(res.totalComissao)] as ReactNode[]]} />
           <T title="Tabela 4 — Cronograma de Rateio" head={["Vencimento", "Parcela", "Comissão", ...parts.map((x) => x.nome.split(" ")[0] ?? x.nome)]}
