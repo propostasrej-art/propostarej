@@ -145,8 +145,8 @@ function Ficha() {
                 const set = (patch: object) => { revisar(`p:${x.id}`); up({ parcelas: p.parcelas.map((y) => (y.id === x.id ? { ...y, ...patch } : y)) }); };
                 const pc = conf[`p:${x.id}`];
                 return (<tr key={x.id} data-k={`p:${x.id}`} className={precisaRevisao(pc) ? (nivel(pc!) === "baixa" ? "bg-destructive/5" : "bg-warn/10") : ""}>
-                  <Td><Select value={x.tipo} onChange={(e) => set({ tipo: e.target.value })}>{TIPOS_PARCELA.map((t) => <option key={t}>{t}</option>)}</Select></Td>
-                  <Td><Input type="number" className="font-mono" value={x.valor || ""} onChange={(e) => set({ valor: +e.target.value })} /></Td>
+                  <Td><Select className="min-w-40" value={x.tipo} onChange={(e) => set({ tipo: e.target.value })}>{TIPOS_PARCELA.map((t) => <option key={t}>{t}</option>)}</Select></Td>
+                  <Td><Input type="number" className="min-w-28 font-mono" value={x.valor || ""} onChange={(e) => set({ valor: +e.target.value })} /></Td>
                   <Td><Input type="date" className="font-mono" value={x.vencimento} onChange={(e) => set({ vencimento: e.target.value })} /></Td>
                   <Td><Mono>{pct(p.vgv ? (x.valor / p.vgv) * 100 : 0)}</Mono>{pc !== undefined && <div className="mt-1 flex gap-1 text-xs">{L("", `p:${x.id}`)}</div>}</Td>
                   <Td><Btn variant="danger" onClick={() => up({ parcelas: p.parcelas.filter((y) => y.id !== x.id) })}><Trash2 className="h-4 w-4" /></Btn></Td>
