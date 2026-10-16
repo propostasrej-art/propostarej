@@ -1,7 +1,9 @@
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import { LayoutDashboard, FileText, Calculator, Inbox, Building2, Users, Trophy, ScrollText, PenTool, Webhook, PanelLeftClose, PanelLeft } from "lucide-react";
+import { LayoutDashboard, FileText, Calculator, Inbox, Building2, Users, Trophy, ScrollText, PenTool, Webhook, PanelLeftClose, PanelLeft, LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/integrations/supabase/client";
+import { limpar, useStore } from "@/lib/store";
 
 const nav = [
   { to: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -13,16 +15,19 @@ const nav = [
   { to: "/ranking", label: "Ranking Comercial", icon: Trophy },
   { to: "/contrato", label: "Contrato e Minutas", icon: ScrollText },
   { to: "/assinaturas", label: "Assinatura & Cobrança", icon: PenTool },
-  { to: "/webhooks", label: "Webhooks e Acesso", icon: Webhook },
+  { to: "/webhooks", label: "Webhooks e Acesso", icon: Webhook, admin: true },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {
   const [open, setOpen] = useState(true);
   const [mobile, setMobile] = useState(false);
+  const eu = useStore((s) => s.eu);
+  const navigate = useNavigate();
+  const sair = async () => { await supabase.auth.signOut(); limpar(); navigate({ to: "/auth", replace: true }); };
   const path = useRouterState({ select: (r) => r.location.pathname });
   const side = (
     <nav className="flex flex-col gap-1 p-3">
-      {nav.map((n) => {
+      {nav.filter((n) => !("admin" in n) || eu?.papel === "Admin").map((n) => {
         const active = path === n.to;
         return (
           <Link key={n.to} to={n.to} onClick={() => setMobile(false)} title={n.label}
@@ -56,9 +61,13 @@ export function AppShell({ children }: { children: ReactNode }) {
             onClick={() => (window.innerWidth < 768 ? setMobile(true) : setOpen(!open))}>
             {open ? <PanelLeftClose className="h-5 w-5" /> : <PanelLeft className="h-5 w-5" />}
           </button>
-          <span className="text-sm text-muted-foreground">Gestão de Propostas · Análise Documental · Rateio de Comissões</span>
+          <span className="hidden flex-1 text-sm text-muted-foreground lg:block">Gestão de Propostas · Análise Documental · Rateio de Comissões</span>
+          <div className="ml-auto flex items-center gap-3 text-sm">
+            <span className="hidden text-right leading-tight sm:block"><span className="block font-medium">{eu?.email}</span><span className="text-xs text-muted-foreground">{eu?.papel ?? "Sem permissão"}</span></span>
+            <button onClick={sair} className="flex items-center gap-1 rounded-md px-2 py-1.5 hover:bg-muted" aria-label="Sair"><LogOut className="h-4 w-4" /><span className="hidden sm:inline">Sair</span></button>
+          </div>
         </header>
-        <main className="flex-1 p-4 md:p-8 print:p-0">{children}</main>
+        <main className="flex-1 p-4 md:p-8 print:p-0">{eu && !eu.papel ? <div className="rounded-xl border bg-card p-6 text-sm">Sua conta ainda não tem permissão de acesso. Peça a um administrador para liberar seu e-mail.</div> : children}</main>
       </div>
     </div>
   );

@@ -6,7 +6,7 @@ import { setState, useStore, type EnvStatus } from "@/lib/store";
 import { dt, uid } from "@/lib/format";
 import { meta } from "@/lib/helpers";
 
-export const Route = createFileRoute("/assinaturas")({
+export const Route = createFileRoute("/_authenticated/assinaturas")({
   head: () => meta("Assinatura e Cobrança", "Envelopes Assinafy e cobranças Asaas."),
   component: Assin,
 });

@@ -5,7 +5,7 @@ import { useStore } from "@/lib/store";
 import { brl } from "@/lib/format";
 import { comissaoPct, meta } from "@/lib/helpers";
 
-export const Route = createFileRoute("/")({
+export const Route = createFileRoute("/_authenticated/")({
   head: () => meta("Dashboard", "Métricas de VGV, comissões e propostas da R&J."),
   component: Dashboard,
 });

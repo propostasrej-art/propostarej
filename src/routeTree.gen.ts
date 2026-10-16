@@ -9,109 +9,137 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AssinaturasRouteImport } from './routes/assinaturas'
-import { Route as ContratoRouteImport } from './routes/contrato'
-import { Route as EmpreendimentosRouteImport } from './routes/empreendimentos'
-import { Route as EquipeRouteImport } from './routes/equipe'
-import { Route as InboxRouteImport } from './routes/inbox'
-import { Route as PropostaRouteImport } from './routes/proposta'
-import { Route as RankingRouteImport } from './routes/ranking'
-import { Route as RateioRouteImport } from './routes/rateio'
-import { Route as WebhooksRouteImport } from './routes/webhooks'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedAssinaturasRouteImport } from './routes/_authenticated/assinaturas'
+import { Route as AuthenticatedContratoRouteImport } from './routes/_authenticated/contrato'
+import { Route as AuthenticatedEmpreendimentosRouteImport } from './routes/_authenticated/empreendimentos'
+import { Route as AuthenticatedEquipeRouteImport } from './routes/_authenticated/equipe'
+import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/inbox'
+import { Route as AuthenticatedPropostaRouteImport } from './routes/_authenticated/proposta'
+import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated/ranking'
+import { Route as AuthenticatedRateioRouteImport } from './routes/_authenticated/rateio'
+import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
 
-const IndexRoute = IndexRouteImport.update({
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AssinaturasRoute = AssinaturasRouteImport.update({
-  id: '/assinaturas',
-  path: '/assinaturas',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ContratoRoute = ContratoRouteImport.update({
+const AuthenticatedAssinaturasRoute =
+  AuthenticatedAssinaturasRouteImport.update({
+    id: '/assinaturas',
+    path: '/assinaturas',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedContratoRoute = AuthenticatedContratoRouteImport.update({
   id: '/contrato',
   path: '/contrato',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const EmpreendimentosRoute = EmpreendimentosRouteImport.update({
-  id: '/empreendimentos',
-  path: '/empreendimentos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const EquipeRoute = EquipeRouteImport.update({
+const AuthenticatedEmpreendimentosRoute =
+  AuthenticatedEmpreendimentosRouteImport.update({
+    id: '/empreendimentos',
+    path: '/empreendimentos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedEquipeRoute = AuthenticatedEquipeRouteImport.update({
   id: '/equipe',
   path: '/equipe',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const InboxRoute = InboxRouteImport.update({
+const AuthenticatedInboxRoute = AuthenticatedInboxRouteImport.update({
   id: '/inbox',
   path: '/inbox',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const PropostaRoute = PropostaRouteImport.update({
+const AuthenticatedPropostaRoute = AuthenticatedPropostaRouteImport.update({
   id: '/proposta',
   path: '/proposta',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const RankingRoute = RankingRouteImport.update({
+const AuthenticatedRankingRoute = AuthenticatedRankingRouteImport.update({
   id: '/ranking',
   path: '/ranking',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const RateioRoute = RateioRouteImport.update({
+const AuthenticatedRateioRoute = AuthenticatedRateioRouteImport.update({
   id: '/rateio',
   path: '/rateio',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const WebhooksRoute = WebhooksRouteImport.update({
+const AuthenticatedWebhooksRoute = AuthenticatedWebhooksRouteImport.update({
   id: '/webhooks',
   path: '/webhooks',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/assinaturas': typeof AssinaturasRoute
-  '/contrato': typeof ContratoRoute
-  '/empreendimentos': typeof EmpreendimentosRoute
-  '/equipe': typeof EquipeRoute
-  '/inbox': typeof InboxRoute
-  '/proposta': typeof PropostaRoute
-  '/ranking': typeof RankingRoute
-  '/rateio': typeof RateioRoute
-  '/webhooks': typeof WebhooksRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/assinaturas': typeof AuthenticatedAssinaturasRoute
+  '/contrato': typeof AuthenticatedContratoRoute
+  '/empreendimentos': typeof AuthenticatedEmpreendimentosRoute
+  '/equipe': typeof AuthenticatedEquipeRoute
+  '/inbox': typeof AuthenticatedInboxRoute
+  '/proposta': typeof AuthenticatedPropostaRoute
+  '/ranking': typeof AuthenticatedRankingRoute
+  '/rateio': typeof AuthenticatedRateioRoute
+  '/webhooks': typeof AuthenticatedWebhooksRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/assinaturas': typeof AssinaturasRoute
-  '/contrato': typeof ContratoRoute
-  '/empreendimentos': typeof EmpreendimentosRoute
-  '/equipe': typeof EquipeRoute
-  '/inbox': typeof InboxRoute
-  '/proposta': typeof PropostaRoute
-  '/ranking': typeof RankingRoute
-  '/rateio': typeof RateioRoute
-  '/webhooks': typeof WebhooksRoute
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/assinaturas': typeof AuthenticatedAssinaturasRoute
+  '/contrato': typeof AuthenticatedContratoRoute
+  '/empreendimentos': typeof AuthenticatedEmpreendimentosRoute
+  '/equipe': typeof AuthenticatedEquipeRoute
+  '/inbox': typeof AuthenticatedInboxRoute
+  '/proposta': typeof AuthenticatedPropostaRoute
+  '/ranking': typeof AuthenticatedRankingRoute
+  '/rateio': typeof AuthenticatedRateioRoute
+  '/webhooks': typeof AuthenticatedWebhooksRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/assinaturas': typeof AssinaturasRoute
-  '/contrato': typeof ContratoRoute
-  '/empreendimentos': typeof EmpreendimentosRoute
-  '/equipe': typeof EquipeRoute
-  '/inbox': typeof InboxRoute
-  '/proposta': typeof PropostaRoute
-  '/ranking': typeof RankingRoute
-  '/rateio': typeof RateioRoute
-  '/webhooks': typeof WebhooksRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/_authenticated/assinaturas': typeof AuthenticatedAssinaturasRoute
+  '/_authenticated/contrato': typeof AuthenticatedContratoRoute
+  '/_authenticated/empreendimentos': typeof AuthenticatedEmpreendimentosRoute
+  '/_authenticated/equipe': typeof AuthenticatedEquipeRoute
+  '/_authenticated/inbox': typeof AuthenticatedInboxRoute
+  '/_authenticated/proposta': typeof AuthenticatedPropostaRoute
+  '/_authenticated/ranking': typeof AuthenticatedRankingRoute
+  '/_authenticated/rateio': typeof AuthenticatedRateioRoute
+  '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
+    | '/reset-password'
     | '/assinaturas'
     | '/contrato'
     | '/empreendimentos'
@@ -123,7 +151,8 @@ export interface FileRouteTypes {
     | '/webhooks'
   fileRoutesByTo: FileRoutesByTo
   to:
-    | '/'
+    | '/auth'
+    | '/reset-password'
     | '/assinaturas'
     | '/contrato'
     | '/empreendimentos'
@@ -133,119 +162,159 @@ export interface FileRouteTypes {
     | '/ranking'
     | '/rateio'
     | '/webhooks'
+    | '/'
   id:
     | '__root__'
-    | '/'
-    | '/assinaturas'
-    | '/contrato'
-    | '/empreendimentos'
-    | '/equipe'
-    | '/inbox'
-    | '/proposta'
-    | '/ranking'
-    | '/rateio'
-    | '/webhooks'
+    | '/_authenticated'
+    | '/auth'
+    | '/reset-password'
+    | '/_authenticated/assinaturas'
+    | '/_authenticated/contrato'
+    | '/_authenticated/empreendimentos'
+    | '/_authenticated/equipe'
+    | '/_authenticated/inbox'
+    | '/_authenticated/proposta'
+    | '/_authenticated/ranking'
+    | '/_authenticated/rateio'
+    | '/_authenticated/webhooks'
+    | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AssinaturasRoute: typeof AssinaturasRoute
-  ContratoRoute: typeof ContratoRoute
-  EmpreendimentosRoute: typeof EmpreendimentosRoute
-  EquipeRoute: typeof EquipeRoute
-  InboxRoute: typeof InboxRoute
-  PropostaRoute: typeof PropostaRoute
-  RankingRoute: typeof RankingRoute
-  RateioRoute: typeof RateioRoute
-  WebhooksRoute: typeof WebhooksRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/assinaturas': {
-      id: '/assinaturas'
+    '/_authenticated/assinaturas': {
+      id: '/_authenticated/assinaturas'
       path: '/assinaturas'
       fullPath: '/assinaturas'
-      preLoaderRoute: typeof AssinaturasRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedAssinaturasRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/contrato': {
-      id: '/contrato'
+    '/_authenticated/contrato': {
+      id: '/_authenticated/contrato'
       path: '/contrato'
       fullPath: '/contrato'
-      preLoaderRoute: typeof ContratoRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedContratoRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/empreendimentos': {
-      id: '/empreendimentos'
+    '/_authenticated/empreendimentos': {
+      id: '/_authenticated/empreendimentos'
       path: '/empreendimentos'
       fullPath: '/empreendimentos'
-      preLoaderRoute: typeof EmpreendimentosRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedEmpreendimentosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/equipe': {
-      id: '/equipe'
+    '/_authenticated/equipe': {
+      id: '/_authenticated/equipe'
       path: '/equipe'
       fullPath: '/equipe'
-      preLoaderRoute: typeof EquipeRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedEquipeRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/inbox': {
-      id: '/inbox'
+    '/_authenticated/inbox': {
+      id: '/_authenticated/inbox'
       path: '/inbox'
       fullPath: '/inbox'
-      preLoaderRoute: typeof InboxRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedInboxRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/proposta': {
-      id: '/proposta'
+    '/_authenticated/proposta': {
+      id: '/_authenticated/proposta'
       path: '/proposta'
       fullPath: '/proposta'
-      preLoaderRoute: typeof PropostaRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedPropostaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/ranking': {
-      id: '/ranking'
+    '/_authenticated/ranking': {
+      id: '/_authenticated/ranking'
       path: '/ranking'
       fullPath: '/ranking'
-      preLoaderRoute: typeof RankingRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedRankingRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/rateio': {
-      id: '/rateio'
+    '/_authenticated/rateio': {
+      id: '/_authenticated/rateio'
       path: '/rateio'
       fullPath: '/rateio'
-      preLoaderRoute: typeof RateioRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedRateioRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/webhooks': {
-      id: '/webhooks'
+    '/_authenticated/webhooks': {
+      id: '/_authenticated/webhooks'
       path: '/webhooks'
       fullPath: '/webhooks'
-      preLoaderRoute: typeof WebhooksRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedWebhooksRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAssinaturasRoute: typeof AuthenticatedAssinaturasRoute
+  AuthenticatedContratoRoute: typeof AuthenticatedContratoRoute
+  AuthenticatedEmpreendimentosRoute: typeof AuthenticatedEmpreendimentosRoute
+  AuthenticatedEquipeRoute: typeof AuthenticatedEquipeRoute
+  AuthenticatedInboxRoute: typeof AuthenticatedInboxRoute
+  AuthenticatedPropostaRoute: typeof AuthenticatedPropostaRoute
+  AuthenticatedRankingRoute: typeof AuthenticatedRankingRoute
+  AuthenticatedRateioRoute: typeof AuthenticatedRateioRoute
+  AuthenticatedWebhooksRoute: typeof AuthenticatedWebhooksRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAssinaturasRoute: AuthenticatedAssinaturasRoute,
+  AuthenticatedContratoRoute: AuthenticatedContratoRoute,
+  AuthenticatedEmpreendimentosRoute: AuthenticatedEmpreendimentosRoute,
+  AuthenticatedEquipeRoute: AuthenticatedEquipeRoute,
+  AuthenticatedInboxRoute: AuthenticatedInboxRoute,
+  AuthenticatedPropostaRoute: AuthenticatedPropostaRoute,
+  AuthenticatedRankingRoute: AuthenticatedRankingRoute,
+  AuthenticatedRateioRoute: AuthenticatedRateioRoute,
+  AuthenticatedWebhooksRoute: AuthenticatedWebhooksRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AssinaturasRoute: AssinaturasRoute,
-  ContratoRoute: ContratoRoute,
-  EmpreendimentosRoute: EmpreendimentosRoute,
-  EquipeRoute: EquipeRoute,
-  InboxRoute: InboxRoute,
-  PropostaRoute: PropostaRoute,
-  RankingRoute: RankingRoute,
-  RateioRoute: RateioRoute,
-  WebhooksRoute: WebhooksRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

@@ -9,7 +9,7 @@ import { PROTEGIDAS, TIPOS_PARCELA } from "@/lib/rateio";
 import { brl, download, dt, pct } from "@/lib/format";
 import { comissaoPct, meta, rateioDaProposta } from "@/lib/helpers";
 
-export const Route = createFileRoute("/rateio")({
+export const Route = createFileRoute("/_authenticated/rateio")({
   head: () => meta("Motor de Rateio", "Rateio em cascata de comissões com capping dinâmico."),
   component: Rateio,
 });
