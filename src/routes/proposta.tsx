@@ -9,6 +9,9 @@ import { brl, pct, uid } from "@/lib/format";
 import { meta, somaParcelas } from "@/lib/helpers";
 import { useServerFn } from "@tanstack/react-start";
 import { extrairProposta } from "@/lib/extracao.functions";
+import { nivel, pendentes, precisaRevisao, LIMIAR_REVISAO } from "@/lib/confianca";
+import { cn } from "@/lib/utils";
+import { Check, ShieldAlert } from "lucide-react";
 
 export const Route = createFileRoute("/proposta")({
   validateSearch: (s: Record<string, unknown>) => ({ id: typeof s["id"] === "string" ? (s["id"] as string) : undefined }),
@@ -28,13 +31,29 @@ function Ficha() {
   const [p, setP] = useState<Proposta>(vazia);
   const [ocr, setOcr] = useState(false);
   const extrair = useServerFn(extrairProposta);
-  useEffect(() => { const f = id && getState().propostas.find((x) => x.id === id); setP(f ? structuredClone(f) : vazia()); }, [id]);
+  const [conf, setConf] = useState<Record<string, number>>({});
+  useEffect(() => { const f = id && getState().propostas.find((x) => x.id === id); setP(f ? structuredClone(f) : vazia()); setConf({}); }, [id]);
+  const revisar = (k: string) => setConf((c) => { if (!(k in c)) return c; const n = { ...c }; delete n[k]; return n; });
+  const rc = (k: string) => (precisaRevisao(conf[k]) ? (nivel(conf[k]!) === "baixa" ? "border-destructive bg-destructive/5 ring-2 ring-destructive/20" : "border-warn bg-warn/10 ring-2 ring-warn/25") : "");
+  const L = (label: string, k: string) => {
+    const c = conf[k];
+    if (c === undefined) return label;
+    const n = nivel(c);
+    return (<><span>{label}</span>
+      <button type="button" onClick={() => revisar(k)} title={n === "alta" ? "Confiança alta" : "Clique para confirmar que revisou"}
+        className={cn("inline-flex items-center gap-1 rounded-full px-1.5 py-px font-mono text-[10px] font-semibold",
+          n === "alta" ? "bg-success/10 text-success" : n === "media" ? "bg-warn/15 text-warn-foreground" : "bg-destructive/10 text-destructive")}>
+        {Math.round(c * 100)}%{n !== "alta" && <><span className="font-sans">revisar</span><Check className="h-3 w-3" /></>}
+      </button></>);
+  };
+  const pend = pendentes(conf);
 
   const up = (patch: Partial<Proposta>) => setP({ ...p, ...patch });
   const soma = somaParcelas(p);
   const ok = p.vgv > 0 && Math.abs(soma - p.vgv) < 0.01;
 
   function salvar() {
+    if (pend.length && !confirm(`${pend.length} campo(s) extraído(s) com baixa confiança ainda não foram revisados. Salvar mesmo assim?`)) { toast.warning("Revise os campos destacados antes de salvar."); return; }
     setState((st) => ({ ...st, propostas: st.propostas.some((x) => x.id === p.id) ? st.propostas.map((x) => (x.id === p.id ? p : x)) : [...st.propostas, p] }));
     toast.success("Proposta salva");
     nav({ to: "/proposta", search: { id: p.id } });
@@ -50,16 +69,23 @@ function Ficha() {
       const d = out.dados;
       const nomeEmp = d.empreendimento.toLowerCase();
       const emp = nomeEmp && s.empreendimentos.find((e) => e.nome.toLowerCase().includes(nomeEmp) || nomeEmp.includes(e.nome.toLowerCase()));
+      const novas = d.parcelas.map((x) => ({ ...x, id: uid() }));
+      const nc: Record<string, number> = { ...d.confianca, empreendimento: emp ? d.confianca.empreendimento : 0 };
+      d.compradores.forEach((c, i) => Object.entries(c.confianca).forEach(([k, v]) => { if (k !== "conjuge" || c.conjuge) nc[`c${i}.${k}`] = v; }));
+      novas.forEach((x) => (nc[`p:${x.id}`] = x.confianca));
+      setConf(nc);
       setP((cur) => ({
         ...cur,
         empreendimentoId: emp ? emp.id : cur.empreendimentoId,
         unidade: d.unidade || cur.unidade, torre: d.torre || cur.torre, vaga: d.vaga || cur.vaga, vgv: d.vgv || cur.vgv,
-        compradores: d.compradores.length ? d.compradores : cur.compradores,
-        parcelas: d.parcelas.length
-          ? d.parcelas.map((x) => ({ id: uid(), tipo: (TIPOS_PARCELA as readonly string[]).includes(x.tipo) ? (x.tipo as TipoParcela) : "Mensal", valor: x.valor, vencimento: /^\d{4}-\d{2}-\d{2}$/.test(x.vencimento) ? x.vencimento : cur.createdAt }))
+        compradores: d.compradores.length ? d.compradores.map(({ confianca: _c, ...c }) => c) : cur.compradores,
+        parcelas: novas.length
+          ? novas.map((x) => ({ id: x.id, tipo: (TIPOS_PARCELA as readonly string[]).includes(x.tipo) ? (x.tipo as TipoParcela) : "Mensal", valor: x.valor, vencimento: /^\d{4}-\d{2}-\d{2}$/.test(x.vencimento) ? x.vencimento : cur.createdAt }))
           : cur.parcelas,
       }));
-      toast.success(`Dados extraídos de "${f.name}". Revise antes de salvar.`);
+      const np = pendentes(nc).length;
+      if (np) toast.warning(`Dados extraídos de "${f.name}". ${np} campo(s) precisam de revisão.`);
+      else toast.success(`Dados extraídos de "${f.name}" com alta confiança.`);
     } catch {
       toast.error("Não foi possível processar o arquivo.");
     } finally { setOcr(false); }
@@ -73,28 +99,28 @@ function Ficha() {
         <div className="space-y-6 xl:col-span-2">
           <Card title="Empreendimento e unidade">
             <div className="grid gap-4 sm:grid-cols-3">
-              <Field label="Empreendimento" className="sm:col-span-2"><Select value={p.empreendimentoId} onChange={(e) => up({ empreendimentoId: e.target.value })}>
+              <Field label={L("Empreendimento", "empreendimento")} className="sm:col-span-2"><Select className={rc("empreendimento")} value={p.empreendimentoId} onChange={(e) => { revisar("empreendimento"); up({ empreendimentoId: e.target.value }); }}>
                 {s.empreendimentos.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}</Select></Field>
               <Field label="Status"><Select value={p.status} onChange={(e) => up({ status: e.target.value as Status })}>
                 {["Em Análise", "Aprovada", "Escriturada"].map((x) => <option key={x}>{x}</option>)}</Select></Field>
-              <Field label="Unidade"><Input value={p.unidade} onChange={(e) => up({ unidade: e.target.value })} /></Field>
-              <Field label="Torre"><Input value={p.torre} onChange={(e) => up({ torre: e.target.value })} /></Field>
-              <Field label="Vaga"><Input value={p.vaga} onChange={(e) => up({ vaga: e.target.value })} /></Field>
-              <Field label="Valor VGV (R$)" className="sm:col-span-3"><Input type="number" className="font-mono" value={p.vgv || ""} onChange={(e) => up({ vgv: +e.target.value })} /></Field>
+              <Field label={L("Unidade", "unidade")}><Input className={rc("unidade")} value={p.unidade} onChange={(e) => { revisar("unidade"); up({ unidade: e.target.value }); }} /></Field>
+              <Field label={L("Torre", "torre")}><Input className={rc("torre")} value={p.torre} onChange={(e) => { revisar("torre"); up({ torre: e.target.value }); }} /></Field>
+              <Field label={L("Vaga", "vaga")}><Input className={rc("vaga")} value={p.vaga} onChange={(e) => { revisar("vaga"); up({ vaga: e.target.value }); }} /></Field>
+              <Field label={L("Valor VGV (R$)", "vgv")} className="sm:col-span-3"><Input type="number" className={cn("font-mono", rc("vgv"))} value={p.vgv || ""} onChange={(e) => { revisar("vgv"); up({ vgv: +e.target.value }); }} /></Field>
             </div>
           </Card>
           <Card title="Compradores" action={<Btn variant="ghost" onClick={() => up({ compradores: [...p.compradores, { nome: "", cpf: "", rg: "", endereco: "", conjuge: "" }] })}><Plus className="h-4 w-4" />Comprador</Btn>}>
             <div className="space-y-4">
               {p.compradores.map((c, i) => {
-                const set = (k: keyof typeof c, v: string) => up({ compradores: p.compradores.map((x, j) => (j === i ? { ...x, [k]: v } : x)) });
+                const set = (k: keyof typeof c, v: string) => { revisar(`c${i}.${k}`); up({ compradores: p.compradores.map((x, j) => (j === i ? { ...x, [k]: v } : x)) }); };
                 return (
                   <div key={i} className="grid gap-3 rounded-lg border border-dashed p-3 sm:grid-cols-6">
-                    <Field label="Nome" className="sm:col-span-3"><Input value={c.nome} onChange={(e) => set("nome", e.target.value)} /></Field>
-                    <Field label="CPF" className="sm:col-span-2"><Input className="font-mono" value={c.cpf} onChange={(e) => set("cpf", e.target.value)} /></Field>
+                    <Field label={L("Nome", `c${i}.nome`)} className="sm:col-span-3"><Input className={cn("", rc(`c${i}.nome`))} value={c.nome} onChange={(e) => set("nome", e.target.value)} /></Field>
+                    <Field label={L("CPF", `c${i}.cpf`)} className="sm:col-span-2"><Input className={cn("font-mono", rc(`c${i}.cpf`))} value={c.cpf} onChange={(e) => set("cpf", e.target.value)} /></Field>
                     <div className="flex items-end"><Btn variant="danger" onClick={() => up({ compradores: p.compradores.filter((_, j) => j !== i) })}><Trash2 className="h-4 w-4" /></Btn></div>
-                    <Field label="RG" className="sm:col-span-2"><Input className="font-mono" value={c.rg} onChange={(e) => set("rg", e.target.value)} /></Field>
-                    <Field label="Cônjuge" className="sm:col-span-4"><Input value={c.conjuge} onChange={(e) => set("conjuge", e.target.value)} /></Field>
-                    <Field label="Endereço" className="sm:col-span-6"><Input value={c.endereco} onChange={(e) => set("endereco", e.target.value)} /></Field>
+                    <Field label={L("RG", `c${i}.rg`)} className="sm:col-span-2"><Input className={cn("font-mono", rc(`c${i}.rg`))} value={c.rg} onChange={(e) => set("rg", e.target.value)} /></Field>
+                    <Field label={L("Cônjuge", `c${i}.conjuge`)} className="sm:col-span-4"><Input className={cn("", rc(`c${i}.conjuge`))} value={c.conjuge} onChange={(e) => set("conjuge", e.target.value)} /></Field>
+                    <Field label={L("Endereço", `c${i}.endereco`)} className="sm:col-span-6"><Input className={cn("", rc(`c${i}.endereco`))} value={c.endereco} onChange={(e) => set("endereco", e.target.value)} /></Field>
                   </div>
                 );
               })}
@@ -103,12 +129,13 @@ function Ficha() {
           <Card title="Série de parcelas" action={<Btn variant="ghost" onClick={() => up({ parcelas: [...p.parcelas, { id: uid(), tipo: "Mensal", valor: 0, vencimento: new Date().toISOString().slice(0, 10) }] })}><Plus className="h-4 w-4" />Parcela</Btn>}>
             <div className="overflow-x-auto"><table className="w-full"><thead><tr><Th>Tipo</Th><Th>Valor</Th><Th>Vencimento</Th><Th>% VGV</Th><Th /></tr></thead><tbody>
               {p.parcelas.map((x) => {
-                const set = (patch: object) => up({ parcelas: p.parcelas.map((y) => (y.id === x.id ? { ...y, ...patch } : y)) });
-                return (<tr key={x.id}>
+                const set = (patch: object) => { revisar(`p:${x.id}`); up({ parcelas: p.parcelas.map((y) => (y.id === x.id ? { ...y, ...patch } : y)) }); };
+                const pc = conf[`p:${x.id}`];
+                return (<tr key={x.id} className={precisaRevisao(pc) ? (nivel(pc!) === "baixa" ? "bg-destructive/5" : "bg-warn/10") : ""}>
                   <Td><Select value={x.tipo} onChange={(e) => set({ tipo: e.target.value })}>{TIPOS_PARCELA.map((t) => <option key={t}>{t}</option>)}</Select></Td>
                   <Td><Input type="number" className="font-mono" value={x.valor || ""} onChange={(e) => set({ valor: +e.target.value })} /></Td>
                   <Td><Input type="date" className="font-mono" value={x.vencimento} onChange={(e) => set({ vencimento: e.target.value })} /></Td>
-                  <Td><Mono>{pct(p.vgv ? (x.valor / p.vgv) * 100 : 0)}</Mono></Td>
+                  <Td><Mono>{pct(p.vgv ? (x.valor / p.vgv) * 100 : 0)}</Mono>{pc !== undefined && <div className="mt-1 flex gap-1 text-xs">{L("", `p:${x.id}`)}</div>}</Td>
                   <Td><Btn variant="danger" onClick={() => up({ parcelas: p.parcelas.filter((y) => y.id !== x.id) })}><Trash2 className="h-4 w-4" /></Btn></Td>
                 </tr>);
               })}
@@ -138,6 +165,22 @@ function Ficha() {
               <input type="file" disabled={ocr} accept=".pdf,image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
             </label>
           </Card>
+          {Object.keys(conf).length > 0 && (
+            <Card title="Revisão da extração">
+              <div className={cn("flex items-center gap-2 rounded-lg p-3 text-sm font-medium", pend.length ? "bg-warn/15 text-warn-foreground" : "bg-success/10 text-success")}>
+                {pend.length ? <ShieldAlert className="h-4 w-4" /> : <CheckCircle2 className="h-4 w-4" />}
+                {pend.length ? `${pend.length} campo(s) precisam de revisão` : "Todos os campos revisados"}
+              </div>
+              <div className="mt-3 h-2 overflow-hidden rounded-full bg-muted"><div className="h-full bg-success transition-all" style={{ width: `${(1 - pend.length / Object.keys(conf).length) * 100}%` }} /></div>
+              <div className="mt-3 space-y-1.5 text-xs text-muted-foreground">
+                <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-success" />Alta (≥ <Mono>{Math.round(LIMIAR_REVISAO * 100)}%</Mono>)</div>
+                <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-warn" />Média — conferir com o documento</div>
+                <div className="flex items-center gap-2"><span className="h-2.5 w-2.5 rounded-full bg-destructive" />Baixa — provável erro ou ausente</div>
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">Edite o campo ou clique no selo para confirmar a revisão.</p>
+              {pend.length > 0 && <Btn variant="outline" className="mt-3 w-full justify-center" onClick={() => setConf((c) => Object.fromEntries(Object.entries(c).map(([k, v]) => [k, Math.max(v, LIMIAR_REVISAO)])))}><Check className="h-4 w-4" />Marcar tudo como revisado</Btn>}
+            </Card>
+          )}
           <Card title="Validador de VGV">
             <div className="space-y-2 text-sm">
               <div className="flex justify-between"><span>VGV</span><Mono>{brl(p.vgv)}</Mono></div>
