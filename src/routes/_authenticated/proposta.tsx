@@ -11,8 +11,18 @@ import { useServerFn } from "@tanstack/react-start";
 import { extrairProposta } from "@/lib/extracao.functions";
 import { nivel, pendentes, precisaRevisao, LIMIAR_REVISAO } from "@/lib/confianca";
 import { cn } from "@/lib/utils";
-import { Check, ShieldAlert } from "lucide-react";
+import { Check, ShieldAlert, FileText } from "lucide-react";
 import { DocViewer } from "@/components/DocViewer";
+
+type Doc = { id: string; slot: string; tipo: string; file: File; trechos: Record<string, string>; rotulos: Record<string, string> };
+const SLOTS_FIXOS = ["Documento de identidade (RG/CNH)", "CPF", "Comprovante de residência", "Comprovante de estado civil", "Proposta"];
+// Campos do comprador que cada tipo de documento pode preencher
+const CAMPOS_DOC: Record<string, string[]> = {
+  "Documento de identidade (RG/CNH)": ["nome", "cpf", "rg"],
+  CPF: ["nome", "cpf"],
+  "Comprovante de residência": ["nome", "endereco"],
+  "Comprovante de estado civil": ["nome", "cpf", "conjuge"],
+};
 
 export const Route = createFileRoute("/_authenticated/proposta")({
   validateSearch: (s: Record<string, unknown>) => ({ id: typeof s["id"] === "string" ? (s["id"] as string) : undefined }),
