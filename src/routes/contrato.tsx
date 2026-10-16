@@ -16,8 +16,8 @@ export const Route = createFileRoute("/contrato")({
 const T = ({ title, head, rows }: { title: string; head: string[]; rows: ReactNode[][] }) => (
   <div className="mt-5 break-inside-avoid">
     <div className="mb-1 text-xs font-bold uppercase">{title}</div>
-    <table className="w-full border-collapse text-[11px]"><thead><tr>{head.map((h) => <th key={h} className="border bg-muted px-2 py-1 text-left">{h}</th>)}</tr></thead>
-      <tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} className="border px-2 py-1 font-mono">{c}</td>)}</tr>)}</tbody></table>
+    <table className="w-full table-fixed border-collapse text-[10px]"><thead><tr>{head.map((h) => <th key={h} className="border bg-muted px-2 py-1 text-left">{h}</th>)}</tr></thead>
+      <tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} className="border px-1.5 py-1 font-mono break-words">{c}</td>)}</tr>)}</tbody></table>
   </div>
 );
 

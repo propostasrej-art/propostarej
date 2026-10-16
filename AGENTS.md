@@ -8,3 +8,7 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+
+## Architecture
+- App data lives in a localStorage-backed store (`src/lib/store.ts`, useSyncExternalStore); seed must stay deterministic so SSR hydration matches.
+- Commission cascade logic lives only in `src/lib/rateio.ts` (pure, tested in `src/test/rateio.test.ts`); UI pages call it via `src/lib/helpers.ts`.
