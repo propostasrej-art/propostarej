@@ -70,44 +70,71 @@ function Ficha() {
     toast.success("Proposta salva");
     nav({ to: "/proposta", search: { id: p.id } });
   }
-  async function onFile(f?: File) {
+  async function onFile(f: File | undefined, tipo: string, slot: string) {
     if (!f) return;
     if (f.size > 10 * 1024 * 1024) { toast.error("Arquivo acima de 10 MB."); return; }
-    setOcr(true);
+    setOcr(slot);
     try {
       const base64 = await new Promise<string>((ok, err) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] ?? ""); r.onerror = err; r.readAsDataURL(f); });
-      const out = await extrair({ data: { filename: f.name, mime: f.type || "application/pdf", base64 } });
+      const out = await extrair({ data: { filename: f.name, mime: f.type || "application/pdf", base64, tipoDoc: tipo } });
       if (!out.ok) { toast.error(out.erro); return; }
       const d = out.dados;
-      const nomeEmp = d.empreendimento.toLowerCase();
-      const emp = nomeEmp && s.empreendimentos.find((e) => e.nome.toLowerCase().includes(nomeEmp) || nomeEmp.includes(e.nome.toLowerCase()));
-      const novas = d.parcelas.map((x) => ({ ...x, id: uid() }));
-      const nc: Record<string, number> = { ...d.confianca, empreendimento: emp ? d.confianca.empreendimento : 0 };
-      d.compradores.forEach((c, i) => Object.entries(c.confianca).forEach(([k, v]) => { if (k !== "conjuge" || c.conjuge) nc[`c${i}.${k}`] = v; }));
-      novas.forEach((x) => (nc[`p:${x.id}`] = x.confianca));
-      setConf(nc);
-      const tr: Record<string, string> = { ...d.trechos };
-      const rot: Record<string, string> = { empreendimento: "Empreendimento", unidade: "Unidade", torre: "Torre", vaga: "Vaga", vgv: "Valor VGV" };
+      const isProp = tipo === "Proposta";
+      const docId = uid();
+      const nc: Record<string, number> = {};
+      const tr: Record<string, string> = {};
+      const rot: Record<string, string> = {};
       const nomes: Record<string, string> = { nome: "Nome", cpf: "CPF", rg: "RG", endereco: "Endereço", conjuge: "Cônjuge" };
-      d.compradores.forEach((c, i) => Object.entries(c.trechos).forEach(([k, v]) => { tr[`c${i}.${k}`] = v; rot[`c${i}.${k}`] = `Comprador ${i + 1} · ${nomes[k] ?? k}`; }));
-      novas.forEach((x, i) => { tr[`p:${x.id}`] = x.trecho; rot[`p:${x.id}`] = `Parcela ${i + 1} · ${x.tipo}`; });
-      setTrechos(tr); setRotulos(rot); setArquivo(f); setAtivo(null);
+      const permitidos = CAMPOS_DOC[tipo] ?? ["nome", "cpf", "rg", "endereco", "conjuge"];
+      let emp: { id: string } | undefined | "" = undefined;
+      let novas: { id: string; tipo: string; valor: number; vencimento: string; confianca: number; trecho: string }[] = [];
+      if (isProp) {
+        const nomeEmp = d.empreendimento.toLowerCase();
+        emp = nomeEmp && s.empreendimentos.find((e) => e.nome.toLowerCase().includes(nomeEmp) || nomeEmp.includes(e.nome.toLowerCase()));
+        novas = d.parcelas.map((x) => ({ ...x, id: uid() }));
+        (["empreendimento", "unidade", "torre", "vaga", "vgv"] as const).forEach((k) => { nc[k] = k === "empreendimento" && !emp ? 0 : d.confianca[k]; tr[k] = d.trechos[k]; });
+        Object.assign(rot, { empreendimento: "Empreendimento", unidade: "Unidade", torre: "Torre", vaga: "Vaga", vgv: "Valor VGV" });
+        novas.forEach((x, i) => { nc[`p:${x.id}`] = x.confianca; tr[`p:${x.id}`] = x.trecho; rot[`p:${x.id}`] = `Parcela ${i + 1} · ${x.tipo}`; });
+      }
+      // Casa cada comprador extraído com um existente (CPF ou nome), senão usa o 1º vazio / novo
+      const dig = (v: string) => v.replace(/\D/g, "");
+      const compr = p.compradores.map((c) => ({ ...c }));
+      d.compradores.forEach((c, n) => {
+        let i = compr.findIndex((x) => (dig(c.cpf) && dig(x.cpf) === dig(c.cpf)) || (c.nome && x.nome.trim().toLowerCase() === c.nome.trim().toLowerCase()));
+        if (i < 0) i = !isProp && n === 0 ? 0 : compr.findIndex((x) => !x.nome && !x.cpf);
+        if (i < 0) { compr.push({ nome: "", cpf: "", rg: "", endereco: "", conjuge: "" }); i = compr.length - 1; }
+        const alvo = compr[i]!;
+        (Object.keys(nomes) as (keyof typeof alvo)[]).forEach((k) => {
+          if (!permitidos.includes(k) || !c[k]) return;
+          alvo[k] = c[k];
+          nc[`c${i}.${k}`] = c.confianca[k];
+          tr[`c${i}.${k}`] = c.trechos[k];
+          rot[`c${i}.${k}`] = `Comprador ${i + 1} · ${nomes[k]}`;
+        });
+      });
+      setConf((c) => ({ ...c, ...nc }));
+      setOrigem((o) => ({ ...o, ...Object.fromEntries(Object.keys(tr).map((k) => [k, docId])) }));
+      setDocs((ds) => [...ds.filter((x) => x.slot !== slot), { id: docId, slot, tipo, file: f, trechos: tr, rotulos: rot }]);
+      setDocAtivo(docId); setAtivo(null);
       setP((cur) => ({
         ...cur,
-        empreendimentoId: emp ? emp.id : cur.empreendimentoId,
-        unidade: d.unidade || cur.unidade, torre: d.torre || cur.torre, vaga: d.vaga || cur.vaga, vgv: d.vgv || cur.vgv,
-        compradores: d.compradores.length ? d.compradores.map(({ confianca: _c, ...c }) => c) : cur.compradores,
-        parcelas: novas.length
-          ? novas.map((x) => ({ id: x.id, tipo: (TIPOS_PARCELA as readonly string[]).includes(x.tipo) ? (x.tipo as TipoParcela) : "Mensal", valor: x.valor, vencimento: /^\d{4}-\d{2}-\d{2}$/.test(x.vencimento) ? x.vencimento : cur.createdAt }))
-          : cur.parcelas,
+        compradores: compr,
+        ...(isProp ? {
+          empreendimentoId: emp ? emp.id : cur.empreendimentoId,
+          unidade: d.unidade || cur.unidade, torre: d.torre || cur.torre, vaga: d.vaga || cur.vaga, vgv: d.vgv || cur.vgv,
+          parcelas: novas.length
+            ? novas.map((x) => ({ id: x.id, tipo: (TIPOS_PARCELA as readonly string[]).includes(x.tipo) ? (x.tipo as TipoParcela) : "Mensal", valor: x.valor, vencimento: /^\d{4}-\d{2}-\d{2}$/.test(x.vencimento) ? x.vencimento : cur.createdAt }))
+            : cur.parcelas,
+        } : {}),
       }));
       const np = pendentes(nc).length;
-      if (np) toast.warning(`Dados extraídos de "${f.name}". ${np} campo(s) precisam de revisão.`);
-      else toast.success(`Dados extraídos de "${f.name}" com alta confiança.`);
+      if (np) toast.warning(`${tipo}: dados extraídos de "${f.name}". ${np} campo(s) precisam de revisão.`);
+      else toast.success(`${tipo}: dados extraídos de "${f.name}".`);
     } catch {
       toast.error("Não foi possível processar o arquivo.");
-    } finally { setOcr(false); }
+    } finally { setOcr(null); }
   }
+  const slots = [...SLOTS_FIXOS.map((t) => ({ slot: t, tipo: t, extra: false })), ...extras.map((e, i) => ({ slot: e, tipo: `Documento adicional ${i + 1}`, extra: true }))];
 
   return (
     <div>
