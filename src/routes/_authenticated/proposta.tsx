@@ -223,7 +223,7 @@ function Ficha() {
           </Card>
           <ParcelasTable key={p.id} parcelas={p.parcelas} onChange={(parcelas) => up({ parcelas })}
             revisar={(id) => revisar(`p:${id}`)} indicador={(id) => conf[`p:${id}`] === undefined ? null : L("", `p:${id}`)}
-            destaque={(ids) => ids.some((id) => nivel(conf[`p:${id}`]) === "baixa" && precisaRevisao(conf[`p:${id}`])) ? "bg-destructive/5" : ids.some((id) => precisaRevisao(conf[`p:${id}`])) ? "bg-warn/10" : ""} />
+            destaque={(ids) => ids.some((id) => { const c = conf[`p:${id}`]; return c !== undefined && nivel(c) === "baixa" && precisaRevisao(c); }) ? "bg-destructive/5" : ids.some((id) => precisaRevisao(conf[`p:${id}`])) ? "bg-warn/10" : ""} />
           <Card title="Participantes do rateio (% sobre VGV)" action={<Btn variant="ghost" onClick={() => up({ participantes: [...p.participantes, { membroId: s.membros[0]?.id ?? "", pct: 1 }] })}><Plus className="h-4 w-4" />Participante</Btn>}>
             <div className="space-y-2">
               {p.participantes.map((x, i) => (
