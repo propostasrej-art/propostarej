@@ -1,5 +1,5 @@
 export const TIPOS_PARCELA = ["Sinal/Ato", "Mensal", "Semestral", "Chaves", "Financiamento Bancário", "FGTS", "Subsídio"] as const;
-export type TipoParcela = (typeof TIPOS_PARCELA)[number];
+export type TipoParcela = string;
 export const PROTEGIDAS: TipoParcela[] = ["Financiamento Bancário", "FGTS", "Subsídio"];
 
 export type Retencao = Record<TipoParcela, number>;

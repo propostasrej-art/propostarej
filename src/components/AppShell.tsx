@@ -1,6 +1,6 @@
 import { Link, useNavigate, useRouterState } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
-import { LayoutDashboard, FileText, Calculator, Inbox, Building2, Users, Trophy, ScrollText, PenTool, Webhook, PanelLeftClose, PanelLeft, LogOut } from "lucide-react";
+import { LayoutDashboard, FileText, Calculator, Inbox, Building2, Users, Trophy, ScrollText, PenTool, Webhook, PanelLeftClose, PanelLeft, LogOut, ListPlus } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { limpar, useStore } from "@/lib/store";
@@ -16,6 +16,7 @@ const nav = [
   { to: "/contrato", label: "Contrato e Minutas", icon: ScrollText },
   { to: "/assinaturas", label: "Assinatura & Cobrança", icon: PenTool },
   { to: "/webhooks", label: "Webhooks e Acesso", icon: Webhook, admin: true },
+  { to: "/tipos-parcela", label: "Tipos de Parcela", icon: ListPlus, admin: true },
 ] as const;
 
 export function AppShell({ children }: { children: ReactNode }) {

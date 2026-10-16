@@ -8,6 +8,13 @@
       "when": 1792175857146,
       "tag": "0000_cloud_store_auth",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792191978035,
+      "tag": "0001_create_tipos_parcela",
+      "breakpoints": true
     }
   ]
 }

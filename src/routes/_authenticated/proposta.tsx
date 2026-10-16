@@ -5,7 +5,7 @@ import { toast } from "sonner";
 import { Btn, Card, Field, Input, Mono, PageHeader, Select } from "@/components/kit";
 import { ParcelasTable } from "@/components/ParcelasTable";
 import { getState, setState, useStore, type Proposta, type Status } from "@/lib/store";
-import { TIPOS_PARCELA, type TipoParcela } from "@/lib/rateio";
+import { nomesTiposParcela } from "@/lib/tipos-parcela";
 import { brl, pct, uid } from "@/lib/format";
 import { meta, somaParcelas } from "@/lib/helpers";
 import { useServerFn } from "@tanstack/react-start";
@@ -165,7 +165,7 @@ function Ficha() {
           empreendimentoId: emp ? emp.id : cur.empreendimentoId,
           unidade: d.unidade || cur.unidade, torre: d.torre || cur.torre, vaga: d.vaga || cur.vaga, vgv: d.vgv || cur.vgv,
           parcelas: novas.length
-            ? novas.map((x) => ({ id: x.id, tipo: (TIPOS_PARCELA as readonly string[]).includes(x.tipo) ? (x.tipo as TipoParcela) : "Mensal", valor: x.valor, vencimento: /^\d{4}-\d{2}-\d{2}$/.test(x.vencimento) ? x.vencimento : cur.createdAt }))
+            ? novas.map((x) => ({ id: x.id, tipo: nomesTiposParcela(s.tiposParcela).includes(x.tipo) ? x.tipo : "Mensal", valor: x.valor, vencimento: /^\d{4}-\d{2}-\d{2}$/.test(x.vencimento) ? x.vencimento : cur.createdAt }))
             : cur.parcelas,
           participantes: cur.participantes.length || !equipe.length ? cur.participantes
             : [...new Map(equipe.map((m) => [m.id, { membroId: m.id, pct: 1 }])).values()],

@@ -1,7 +1,9 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Btn, Card, Input, Mono, Select, Td, Th } from "./kit";
-import { TIPOS_PARCELA, type ParcelaIn, type TipoParcela } from "@/lib/rateio";
+import { type ParcelaIn, type TipoParcela } from "@/lib/rateio";
+import { useStore } from "@/lib/store";
+import { nomesTiposParcela } from "@/lib/tipos-parcela";
 import { agruparParcelas, expandirLinhas, totalLinha, type LinhaParcelas } from "@/lib/parcelas-tabela";
 import { brl, uid } from "@/lib/format";
 
@@ -10,6 +12,8 @@ export function ParcelasTable({ parcelas, onChange, revisar, indicador, destaque
   revisar: (id: string) => void; indicador: (id: string) => ReactNode; destaque: (ids: string[]) => string;
 }) {
   const [linhas, setLinhas] = useState(() => agruparParcelas(parcelas));
+  const cadastrados = useStore((s) => s.tiposParcela);
+  const tipos = nomesTiposParcela(cadastrados, parcelas.map((p) => p.tipo));
   const emitidas = useRef(parcelas);
   useEffect(() => {
     if (parcelas !== emitidas.current) { setLinhas(agruparParcelas(parcelas)); emitidas.current = parcelas; }
@@ -39,7 +43,7 @@ export function ParcelasTable({ parcelas, onChange, revisar, indicador, destaque
         };
         return <tr key={linha.id} data-k={`p:${linha.ids[0]}`} className={destaque(linha.ids)}>
           <Td><Input aria-label={`Quantidade ${indice + 1}`} type="number" min="1" step="1" className="w-24 font-mono" value={linha.quantidade} onChange={(e) => alterar({ quantidade: Math.max(1, Math.trunc(Number(e.target.value) || 1)) })} /></Td>
-          <Td><Select aria-label={`Tipo de parcela ${indice + 1}`} className="min-w-44" value={linha.tipo} onChange={(e) => alterar({ tipo: e.target.value as TipoParcela })}>{TIPOS_PARCELA.map((tipo) => <option key={tipo}>{tipo}</option>)}</Select></Td>
+          <Td><Select aria-label={`Tipo de parcela ${indice + 1}`} className="min-w-44" value={linha.tipo} onChange={(e) => alterar({ tipo: e.target.value as TipoParcela })}>{tipos.map((tipo) => <option key={tipo}>{tipo}</option>)}</Select></Td>
           <Td><Input aria-label={`Valor Unitário ${indice + 1}`} type="number" min="0" step="0.01" className="min-w-32 font-mono" value={linha.valor || ""} onChange={(e) => alterar({ valor: Math.max(0, Number(e.target.value)) })} /></Td>
           <Td><Input aria-label={`1.º vencimento ${indice + 1}`} type="date" className="min-w-36 font-mono" value={linha.vencimento} onChange={(e) => alterar({ vencimento: e.target.value })} /></Td>
           <Td><Mono className="whitespace-nowrap font-semibold text-success">{brl(totalLinha(linha))}</Mono><div className="mt-1 flex flex-wrap gap-1">{linha.ids.map((id) => <span key={id} data-k={`p:${id}`}>{indicador(id)}</span>)}</div></Td>

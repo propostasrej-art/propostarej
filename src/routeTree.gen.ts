@@ -21,6 +21,7 @@ import { Route as AuthenticatedInboxRouteImport } from './routes/_authenticated/
 import { Route as AuthenticatedPropostaRouteImport } from './routes/_authenticated/proposta'
 import { Route as AuthenticatedRankingRouteImport } from './routes/_authenticated/ranking'
 import { Route as AuthenticatedRateioRouteImport } from './routes/_authenticated/rateio'
+import { Route as AuthenticatedTiposParcelaRouteImport } from './routes/_authenticated/tipos-parcela'
 import { Route as AuthenticatedWebhooksRouteImport } from './routes/_authenticated/webhooks'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -84,6 +85,12 @@ const AuthenticatedRateioRoute = AuthenticatedRateioRouteImport.update({
   path: '/rateio',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedTiposParcelaRoute =
+  AuthenticatedTiposParcelaRouteImport.update({
+    id: '/tipos-parcela',
+    path: '/tipos-parcela',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedWebhooksRoute = AuthenticatedWebhooksRouteImport.update({
   id: '/webhooks',
   path: '/webhooks',
@@ -102,6 +109,7 @@ export interface FileRoutesByFullPath {
   '/proposta': typeof AuthenticatedPropostaRoute
   '/ranking': typeof AuthenticatedRankingRoute
   '/rateio': typeof AuthenticatedRateioRoute
+  '/tipos-parcela': typeof AuthenticatedTiposParcelaRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
 }
 export interface FileRoutesByTo {
@@ -115,6 +123,7 @@ export interface FileRoutesByTo {
   '/proposta': typeof AuthenticatedPropostaRoute
   '/ranking': typeof AuthenticatedRankingRoute
   '/rateio': typeof AuthenticatedRateioRoute
+  '/tipos-parcela': typeof AuthenticatedTiposParcelaRoute
   '/webhooks': typeof AuthenticatedWebhooksRoute
   '/': typeof AuthenticatedIndexRoute
 }
@@ -131,6 +140,7 @@ export interface FileRoutesById {
   '/_authenticated/proposta': typeof AuthenticatedPropostaRoute
   '/_authenticated/ranking': typeof AuthenticatedRankingRoute
   '/_authenticated/rateio': typeof AuthenticatedRateioRoute
+  '/_authenticated/tipos-parcela': typeof AuthenticatedTiposParcelaRoute
   '/_authenticated/webhooks': typeof AuthenticatedWebhooksRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
@@ -148,6 +158,7 @@ export interface FileRouteTypes {
     | '/proposta'
     | '/ranking'
     | '/rateio'
+    | '/tipos-parcela'
     | '/webhooks'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -161,6 +172,7 @@ export interface FileRouteTypes {
     | '/proposta'
     | '/ranking'
     | '/rateio'
+    | '/tipos-parcela'
     | '/webhooks'
     | '/'
   id:
@@ -176,6 +188,7 @@ export interface FileRouteTypes {
     | '/_authenticated/proposta'
     | '/_authenticated/ranking'
     | '/_authenticated/rateio'
+    | '/_authenticated/tipos-parcela'
     | '/_authenticated/webhooks'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
@@ -272,6 +285,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRateioRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/tipos-parcela': {
+      id: '/_authenticated/tipos-parcela'
+      path: '/tipos-parcela'
+      fullPath: '/tipos-parcela'
+      preLoaderRoute: typeof AuthenticatedTiposParcelaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/webhooks': {
       id: '/_authenticated/webhooks'
       path: '/webhooks'
@@ -291,6 +311,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPropostaRoute: typeof AuthenticatedPropostaRoute
   AuthenticatedRankingRoute: typeof AuthenticatedRankingRoute
   AuthenticatedRateioRoute: typeof AuthenticatedRateioRoute
+  AuthenticatedTiposParcelaRoute: typeof AuthenticatedTiposParcelaRoute
   AuthenticatedWebhooksRoute: typeof AuthenticatedWebhooksRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
@@ -304,6 +325,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPropostaRoute: AuthenticatedPropostaRoute,
   AuthenticatedRankingRoute: AuthenticatedRankingRoute,
   AuthenticatedRateioRoute: AuthenticatedRateioRoute,
+  AuthenticatedTiposParcelaRoute: AuthenticatedTiposParcelaRoute,
   AuthenticatedWebhooksRoute: AuthenticatedWebhooksRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
