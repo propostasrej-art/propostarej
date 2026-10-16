@@ -12,6 +12,7 @@ import { extrairProposta } from "@/lib/extracao.functions";
 import { nivel, pendentes, precisaRevisao, LIMIAR_REVISAO } from "@/lib/confianca";
 import { cn } from "@/lib/utils";
 import { Check, ShieldAlert } from "lucide-react";
+import { DocViewer } from "@/components/DocViewer";
 
 export const Route = createFileRoute("/proposta")({
   validateSearch: (s: Record<string, unknown>) => ({ id: typeof s["id"] === "string" ? (s["id"] as string) : undefined }),
@@ -32,7 +33,13 @@ function Ficha() {
   const [ocr, setOcr] = useState(false);
   const extrair = useServerFn(extrairProposta);
   const [conf, setConf] = useState<Record<string, number>>({});
-  useEffect(() => { const f = id && getState().propostas.find((x) => x.id === id); setP(f ? structuredClone(f) : vazia()); setConf({}); }, [id]);
+  const [arquivo, setArquivo] = useState<File | null>(null);
+  const [trechos, setTrechos] = useState<Record<string, string>>({});
+  const [rotulos, setRotulos] = useState<Record<string, string>>({});
+  const [ativo, setAtivo] = useState<string | null>(null);
+  const marcar = (e: React.SyntheticEvent) => { const k = (e.target as HTMLElement).closest("[data-k]")?.getAttribute("data-k"); if (k) setAtivo(k); };
+  const pick = (k: string) => { setAtivo(k); const el = document.querySelector<HTMLElement>(`[data-k="${k}"]`); (el?.matches("input,select") ? el : el?.querySelector<HTMLElement>("input,select"))?.focus({ preventScroll: false }); };
+  useEffect(() => { const f = id && getState().propostas.find((x) => x.id === id); setP(f ? structuredClone(f) : vazia()); setConf({}); setArquivo(null); setTrechos({}); setAtivo(null); }, [id]);
   const revisar = (k: string) => setConf((c) => { if (!(k in c)) return c; const n = { ...c }; delete n[k]; return n; });
   const rc = (k: string) => (precisaRevisao(conf[k]) ? (nivel(conf[k]!) === "baixa" ? "border-destructive bg-destructive/5 ring-2 ring-destructive/20" : "border-warn bg-warn/10 ring-2 ring-warn/25") : "");
   const L = (label: string, k: string) => {
@@ -74,6 +81,12 @@ function Ficha() {
       d.compradores.forEach((c, i) => Object.entries(c.confianca).forEach(([k, v]) => { if (k !== "conjuge" || c.conjuge) nc[`c${i}.${k}`] = v; }));
       novas.forEach((x) => (nc[`p:${x.id}`] = x.confianca));
       setConf(nc);
+      const tr: Record<string, string> = { ...d.trechos };
+      const rot: Record<string, string> = { empreendimento: "Empreendimento", unidade: "Unidade", torre: "Torre", vaga: "Vaga", vgv: "Valor VGV" };
+      const nomes: Record<string, string> = { nome: "Nome", cpf: "CPF", rg: "RG", endereco: "Endereço", conjuge: "Cônjuge" };
+      d.compradores.forEach((c, i) => Object.entries(c.trechos).forEach(([k, v]) => { tr[`c${i}.${k}`] = v; rot[`c${i}.${k}`] = `Comprador ${i + 1} · ${nomes[k] ?? k}`; }));
+      novas.forEach((x, i) => { tr[`p:${x.id}`] = x.trecho; rot[`p:${x.id}`] = `Parcela ${i + 1} · ${x.tipo}`; });
+      setTrechos(tr); setRotulos(rot); setArquivo(f); setAtivo(null);
       setP((cur) => ({
         ...cur,
         empreendimentoId: emp ? emp.id : cur.empreendimentoId,
@@ -95,17 +108,17 @@ function Ficha() {
     <div>
       <PageHeader title="Extração & Ficha da Proposta" subtitle={id ? `Editando proposta ${id}` : "Nova proposta"}
         actions={<><Btn variant="outline" onClick={() => nav({ to: "/proposta", search: { id: undefined } })}>Nova</Btn><Btn onClick={salvar}><Save className="h-4 w-4" />Salvar</Btn></>} />
-      <div className="grid gap-6 xl:grid-cols-3">
-        <div className="space-y-6 xl:col-span-2">
+      <div className={cn("grid gap-6", arquivo ? "xl:grid-cols-2" : "xl:grid-cols-3")}>
+        <div className={cn("space-y-6", !arquivo && "xl:col-span-2", "[&_[data-k]]:scroll-mt-24")} onFocusCapture={marcar} onClickCapture={marcar}>
           <Card title="Empreendimento e unidade">
             <div className="grid gap-4 sm:grid-cols-3">
-              <Field label={L("Empreendimento", "empreendimento")} className="sm:col-span-2"><Select className={rc("empreendimento")} value={p.empreendimentoId} onChange={(e) => { revisar("empreendimento"); up({ empreendimentoId: e.target.value }); }}>
+              <Field label={L("Empreendimento", "empreendimento")} className="sm:col-span-2"><Select data-k={"empreendimento"} className={rc("empreendimento")} value={p.empreendimentoId} onChange={(e) => { revisar("empreendimento"); up({ empreendimentoId: e.target.value }); }}>
                 {s.empreendimentos.map((e) => <option key={e.id} value={e.id}>{e.nome}</option>)}</Select></Field>
               <Field label="Status"><Select value={p.status} onChange={(e) => up({ status: e.target.value as Status })}>
                 {["Em Análise", "Aprovada", "Escriturada"].map((x) => <option key={x}>{x}</option>)}</Select></Field>
-              <Field label={L("Unidade", "unidade")}><Input className={rc("unidade")} value={p.unidade} onChange={(e) => { revisar("unidade"); up({ unidade: e.target.value }); }} /></Field>
-              <Field label={L("Torre", "torre")}><Input className={rc("torre")} value={p.torre} onChange={(e) => { revisar("torre"); up({ torre: e.target.value }); }} /></Field>
-              <Field label={L("Vaga", "vaga")}><Input className={rc("vaga")} value={p.vaga} onChange={(e) => { revisar("vaga"); up({ vaga: e.target.value }); }} /></Field>
+              <Field label={L("Unidade", "unidade")}><Input data-k={"unidade"} className={rc("unidade")} value={p.unidade} onChange={(e) => { revisar("unidade"); up({ unidade: e.target.value }); }} /></Field>
+              <Field label={L("Torre", "torre")}><Input data-k={"torre"} className={rc("torre")} value={p.torre} onChange={(e) => { revisar("torre"); up({ torre: e.target.value }); }} /></Field>
+              <Field label={L("Vaga", "vaga")}><Input data-k={"vaga"} className={rc("vaga")} value={p.vaga} onChange={(e) => { revisar("vaga"); up({ vaga: e.target.value }); }} /></Field>
               <Field label={L("Valor VGV (R$)", "vgv")} className="sm:col-span-3"><Input type="number" className={cn("font-mono", rc("vgv"))} value={p.vgv || ""} onChange={(e) => { revisar("vgv"); up({ vgv: +e.target.value }); }} /></Field>
             </div>
           </Card>
@@ -115,12 +128,12 @@ function Ficha() {
                 const set = (k: keyof typeof c, v: string) => { revisar(`c${i}.${k}`); up({ compradores: p.compradores.map((x, j) => (j === i ? { ...x, [k]: v } : x)) }); };
                 return (
                   <div key={i} className="grid gap-3 rounded-lg border border-dashed p-3 sm:grid-cols-6">
-                    <Field label={L("Nome", `c${i}.nome`)} className="sm:col-span-3"><Input className={cn("", rc(`c${i}.nome`))} value={c.nome} onChange={(e) => set("nome", e.target.value)} /></Field>
-                    <Field label={L("CPF", `c${i}.cpf`)} className="sm:col-span-2"><Input className={cn("font-mono", rc(`c${i}.cpf`))} value={c.cpf} onChange={(e) => set("cpf", e.target.value)} /></Field>
+                    <Field label={L("Nome", `c${i}.nome`)} className="sm:col-span-3"><Input data-k={`c${i}.nome`} className={cn("", rc(`c${i}.nome`))} value={c.nome} onChange={(e) => set("nome", e.target.value)} /></Field>
+                    <Field label={L("CPF", `c${i}.cpf`)} className="sm:col-span-2"><Input data-k={`c${i}.cpf`} className={cn("font-mono", rc(`c${i}.cpf`))} value={c.cpf} onChange={(e) => set("cpf", e.target.value)} /></Field>
                     <div className="flex items-end"><Btn variant="danger" onClick={() => up({ compradores: p.compradores.filter((_, j) => j !== i) })}><Trash2 className="h-4 w-4" /></Btn></div>
-                    <Field label={L("RG", `c${i}.rg`)} className="sm:col-span-2"><Input className={cn("font-mono", rc(`c${i}.rg`))} value={c.rg} onChange={(e) => set("rg", e.target.value)} /></Field>
-                    <Field label={L("Cônjuge", `c${i}.conjuge`)} className="sm:col-span-4"><Input className={cn("", rc(`c${i}.conjuge`))} value={c.conjuge} onChange={(e) => set("conjuge", e.target.value)} /></Field>
-                    <Field label={L("Endereço", `c${i}.endereco`)} className="sm:col-span-6"><Input className={cn("", rc(`c${i}.endereco`))} value={c.endereco} onChange={(e) => set("endereco", e.target.value)} /></Field>
+                    <Field label={L("RG", `c${i}.rg`)} className="sm:col-span-2"><Input data-k={`c${i}.rg`} className={cn("font-mono", rc(`c${i}.rg`))} value={c.rg} onChange={(e) => set("rg", e.target.value)} /></Field>
+                    <Field label={L("Cônjuge", `c${i}.conjuge`)} className="sm:col-span-4"><Input data-k={`c${i}.conjuge`} className={cn("", rc(`c${i}.conjuge`))} value={c.conjuge} onChange={(e) => set("conjuge", e.target.value)} /></Field>
+                    <Field label={L("Endereço", `c${i}.endereco`)} className="sm:col-span-6"><Input data-k={`c${i}.endereco`} className={cn("", rc(`c${i}.endereco`))} value={c.endereco} onChange={(e) => set("endereco", e.target.value)} /></Field>
                   </div>
                 );
               })}
@@ -131,9 +144,9 @@ function Ficha() {
               {p.parcelas.map((x) => {
                 const set = (patch: object) => { revisar(`p:${x.id}`); up({ parcelas: p.parcelas.map((y) => (y.id === x.id ? { ...y, ...patch } : y)) }); };
                 const pc = conf[`p:${x.id}`];
-                return (<tr key={x.id} className={precisaRevisao(pc) ? (nivel(pc!) === "baixa" ? "bg-destructive/5" : "bg-warn/10") : ""}>
-                  <Td><Select value={x.tipo} onChange={(e) => set({ tipo: e.target.value })}>{TIPOS_PARCELA.map((t) => <option key={t}>{t}</option>)}</Select></Td>
-                  <Td><Input type="number" className="font-mono" value={x.valor || ""} onChange={(e) => set({ valor: +e.target.value })} /></Td>
+                return (<tr key={x.id} data-k={`p:${x.id}`} className={precisaRevisao(pc) ? (nivel(pc!) === "baixa" ? "bg-destructive/5" : "bg-warn/10") : ""}>
+                  <Td><Select className="min-w-40" value={x.tipo} onChange={(e) => set({ tipo: e.target.value })}>{TIPOS_PARCELA.map((t) => <option key={t}>{t}</option>)}</Select></Td>
+                  <Td><Input type="number" className="min-w-28 font-mono" value={x.valor || ""} onChange={(e) => set({ valor: +e.target.value })} /></Td>
                   <Td><Input type="date" className="font-mono" value={x.vencimento} onChange={(e) => set({ vencimento: e.target.value })} /></Td>
                   <Td><Mono>{pct(p.vgv ? (x.valor / p.vgv) * 100 : 0)}</Mono>{pc !== undefined && <div className="mt-1 flex gap-1 text-xs">{L("", `p:${x.id}`)}</div>}</Td>
                   <Td><Btn variant="danger" onClick={() => up({ parcelas: p.parcelas.filter((y) => y.id !== x.id) })}><Trash2 className="h-4 w-4" /></Btn></Td>
@@ -165,6 +178,11 @@ function Ficha() {
               <input type="file" disabled={ocr} accept=".pdf,image/png,image/jpeg,image/webp" className="hidden" onChange={(e) => onFile(e.target.files?.[0])} />
             </label>
           </Card>
+          {arquivo && (
+            <Card title="Documento de origem" className="xl:sticky xl:top-20">
+              <DocViewer file={arquivo} trechos={trechos} ativo={ativo} onPick={pick} rotulos={rotulos} />
+            </Card>
+          )}
           {Object.keys(conf).length > 0 && (
             <Card title="Revisão da extração">
               <div className={cn("flex items-center gap-2 rounded-lg p-3 text-sm font-medium", pend.length ? "bg-warn/15 text-warn-foreground" : "bg-success/10 text-success")}>
