@@ -74,7 +74,7 @@ const seed = (): State => ({
     { id: "u2", nome: "Marcos Ribeiro", email: "marcos@rj.com.br", papel: "Gerente" },
     { id: "u3", nome: "Rafael Jordão", email: "rafael@rj.com.br", papel: "Corretor" },
   ],
-  config: { assinafyToken: "", asaasToken: "", sandbox: true, webhookSecret: "whsec_" + Math.random().toString(36).slice(2, 14) },
+  config: { assinafyToken: "", asaasToken: "", sandbox: true, webhookSecret: "whsec_rj7k2m9q4x8p" },
   webhookLog: [],
 });
 
