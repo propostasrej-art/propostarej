@@ -29,4 +29,9 @@ describe("Importação em massa de membros", () => {
   it("recusa planilha com cabeçalhos fora do modelo", () => {
     expect(() => validarPlanilhaMembros([["Nome", "Função"], linha], [])).toThrow();
   });
+  it("aceita as colunas extras Gerente/Diretor do modelo atualizado", () => {
+    const resultado = validarPlanilhaMembros([[...COLUNAS_MEMBROS, "Gerente", "Diretor"], [...linha, "✓", "—"]], []);
+    expect(resultado[0]?.erros).toHaveLength(0);
+    expect(resultado[0]?.membro.funcao).toBe("Corretor");
+  });
 });

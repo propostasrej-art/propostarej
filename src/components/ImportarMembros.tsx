@@ -41,7 +41,7 @@ export function ImportarMembros() {
   };
   const baixar = async () => {
     setOcupado(true);
-    try { await baixarModeloMembros(); } catch { toast.error("Não foi possível baixar o modelo."); }
+    try { await baixarModeloMembros(getState().membros); } catch { toast.error("Não foi possível baixar o modelo."); }
     finally { setOcupado(false); }
   };
   return <>
