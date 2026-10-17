@@ -95,8 +95,12 @@ function Ficha() {
   }
   const manterDocumentos = useRef(false);
   const [ocr, setOcr] = useState<string | null>(null);
+  const [extraindo, setExtraindo] = useState(false);
   const extrair = useServerFn(extrairProposta);
   const [conf, setConf] = useState<Record<string, number>>({});
+  // Sempre com a ficha mais recente, para extrações em sequência (banco de documentos).
+  const pRef = useRef(p);
+  useEffect(() => { pRef.current = p; }, [p]);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [docAtivo, setDocAtivo] = useState<string | null>(null);
   const [origem, setOrigem] = useState<Record<string, string>>({});
