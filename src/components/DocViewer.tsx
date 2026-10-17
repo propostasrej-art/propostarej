@@ -62,7 +62,8 @@ export function DocViewer({ file, trechos, ativo, onPick, rotulos }: {
         }
         await w.terminate();
         if (vivo) { setPalavras(all); setStatus(""); }
-      } catch {
+      } catch (e) {
+        console.error("DocViewer render falhou:", e);
         if (vivo) setStatus("Não foi possível localizar os trechos neste documento.");
       }
     })();
