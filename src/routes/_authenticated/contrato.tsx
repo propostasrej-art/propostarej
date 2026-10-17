@@ -18,6 +18,10 @@ export const Route = createFileRoute("/_authenticated/contrato")({
 
 type Modalidade = "rateio" | "repasse";
 
+// O número pode vir cadastrado com a palavra "CRECI" na frente; evita repetir a etiqueta.
+const semCreci = (v?: string) => (v ?? "").trim().replace(/^creci\s+(jur[íi]dico\s*)?/i, "").trim();
+const creciLabel = (v?: string) => { const t = semCreci(v); return t ? `CRECI ${t}` : ""; };
+
 const CSS = `
 @page { size: A4 portrait; margin: 10mm 12mm; }
 .ct { font-family: Arial, Helvetica, Inter, sans-serif; color: #0f172a; }
@@ -106,7 +110,7 @@ function Contrato() {
             <img src={logoRJ.url} alt="R&J Imóveis" className="h-16 w-auto" />
             <div className="mono text-right text-[9px]">
               {imob?.nome ?? "R&J Imóveis"}
-              {imob?.creci ? <><br />CRECI {imob.creci}</> : null}
+              {creciLabel(imob?.creci) ? <><br />{creciLabel(imob?.creci)}</> : null}
             </div>
           </header>
           <h1 className="mt-3 text-center text-[14px] font-bold uppercase">Contrato de Prestação de Serviços de Corretagem Imobiliária</h1>
@@ -116,7 +120,7 @@ function Contrato() {
           {p.compradores.map((c, i) => (
             <div key={i} className="info-card"><b>CONTRATANTE {i + 1}.º TITULAR:</b> {c.nome}, {c.nacionalidade || "brasileiro(a)"}, {c.estadoCivil || "estado civil não informado"}{c.conjuge ? ` (cônjuge: ${c.conjuge})` : ""}, {c.profissao || "profissão não informada"}, CPF <M>{c.cpf}</M>, RG <M>{c.rg}</M>, residente em {c.endereco}; telefone <M>{c.telefone || "—"}</M>; e-mail {c.email || "—"}.</div>
           ))}
-          <div className="info-card"><b>CONTRATADA (INTERMEDIADORA):</b> {imob?.nome ?? "—"}, CNPJ <M>{imob?.doc ?? "—"}</M>, CRECI Jurídico <M>{imob?.creci ?? "—"}</M>, e-mail {imob?.email || "—"}.</div>
+          <div className="info-card"><b>CONTRATADA (INTERMEDIADORA):</b> {imob?.nome ?? "—"}, CNPJ <M>{imob?.doc ?? "—"}</M>, CRECI Jurídico <M>{semCreci(imob?.creci) || "—"}</M>, e-mail {imob?.email || "—"}.</div>
 
           <h2>2 - Empreendimento e imóvel</h2>
           <Tab head={["Empreendimento", "Unidade", "Bloco/Torre", "Endereço"]} rows={[[emp?.nome ?? "—", <M>{p.unidade}</M>, p.torre, emp?.endereco ?? "—"]]} />
@@ -170,13 +174,13 @@ function Contrato() {
           <p>_______________________ - ___, {dataExtenso}.</p>
           <div className="grid grid-cols-2 gap-x-10">
             {p.compradores.map((c, i) => <div key={i} className="sig-box">{c.nome}<br /><M>CPF {c.cpf}</M><br />CONTRATANTE</div>)}
-            <div className="sig-box">{imob?.nome}<br /><M>CNPJ {imob?.doc} · CRECI {imob?.creci}</M><br />IMOBILIÁRIA INTERMEDIADORA</div>
-            {lista.map((b) => <div key={b.m.id} className="sig-box">{b.m.nome}<br /><M>CRECI {b.m.creci}</M><br />CORRETOR ASSOCIADO</div>)}
+            <div className="sig-box">{imob?.nome}<br /><M>CNPJ {imob?.doc}{creciLabel(imob?.creci) ? ` · ${creciLabel(imob?.creci)}` : ""}</M><br />IMOBILIÁRIA INTERMEDIADORA</div>
+            {lista.map((b) => <div key={b.m.id} className="sig-box">{b.m.nome}<br /><M>{creciLabel(b.m.creci) || "CRECI —"}</M><br />CORRETOR ASSOCIADO</div>)}
             {[1, 2].map((n) => <div key={n} className="sig-box">TESTEMUNHA {n}<br />Nome: ______________________<br />CPF: _______________________</div>)}
           </div>
           <footer className="mt-8 flex flex-col items-center gap-2 border-t pt-4" style={{ borderColor: "#0f172a" }}>
             <img src={logoRJ.url} alt="R&J Imóveis" className="h-20 w-auto" />
-            <p className="mono text-[9px] !text-center">{imob?.nome ?? "R&J Imóveis"}{imob?.creci ? ` · CRECI ${imob.creci}` : ""}</p>
+            <p className="mono text-[9px] !text-center">{imob?.nome ?? "R&J Imóveis"}{creciLabel(imob?.creci) ? ` · ${creciLabel(imob?.creci)}` : ""}</p>
           </footer>
         </article>
       </div>
