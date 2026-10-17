@@ -20,6 +20,8 @@ import { chaveDocumentos, guardarDocumento, listarDocumentos, type DocumentoLoca
 import { validarDocumento } from "@/lib/documentos-regras";
 import { useQueryClient } from "@tanstack/react-query";
 import logoRJ from "@/assets/logorj.png.asset.json";
+import { abrirDocumento } from "@/lib/documentos";
+import { Files } from "lucide-react";
 
 type Doc = DocumentoLocal;
 const SLOTS_FIXOS = ["Documento de identidade (RG/CNH)", "CPF", "Comprovante de residência", "Comprovante de estado civil", "Proposta"];
@@ -73,6 +75,24 @@ function Ficha() {
   const [p, setP] = useState<Proposta>(vazia);
   const cache = useQueryClient();
   const [salvando, setSalvando] = useState(false);
+  const [montando, setMontando] = useState(false);
+  // PDF único: ficha A4 da proposta seguida de todos os documentos do banco da proposta.
+  async function pdfCompleto() {
+    if (!id) { toast.warning("Salve a proposta antes de gerar o PDF completo."); return; }
+    const ficha = document.querySelector<HTMLElement>("[data-ficha]");
+    if (!ficha) return;
+    setMontando(true);
+    try {
+      const { gerarDossie, baixarBlob } = await import("@/lib/pdf-dossie");
+      const docs = await listarDocumentos(id);
+      const arquivos = await Promise.all([...docs].reverse().map(async (d) => { const l = await abrirDocumento(d); return { nome: d.nome, tipo: d.tipo, file: l.file }; }));
+      const { blob, falhas } = await gerarDossie(ficha, arquivos);
+      const nome = `proposta-${(p.unidade || id).replace(/[^\w-]+/g, "_")}-completa.pdf`;
+      toast.success(`PDF pronto: ficha + ${arquivos.length} documento(s).`, { duration: 20000, action: { label: "Baixar PDF", onClick: () => baixarBlob(blob, nome) } });
+      if (falhas.length) toast.warning(`Não foi possível incluir: ${falhas.join(", ")}.`);
+    } catch { toast.error("Não foi possível montar o PDF completo. Tente novamente."); }
+    finally { setMontando(false); }
+  }
   const manterDocumentos = useRef(false);
   const [ocr, setOcr] = useState<string | null>(null);
   const extrair = useServerFn(extrairProposta);
@@ -231,7 +251,7 @@ function Ficha() {
     <div>
       <div className="print:hidden">
       <PageHeader title="Extração & Ficha da Proposta" subtitle={id ? `Editando proposta ${id}` : "Nova proposta"}
-        actions={<><Btn variant="outline" disabled={salvando || !!ocr} onClick={() => nav({ to: "/proposta", search: { id: undefined, imprimir: false } })}>Nova</Btn><Btn disabled={salvando || !!ocr} onClick={salvar}><Save className="h-4 w-4" />{salvando ? "Salvando..." : "Salvar"}</Btn></>} />
+        actions={<><Btn variant="outline" disabled={salvando || !!ocr} onClick={() => nav({ to: "/proposta", search: { id: undefined, imprimir: false } })}>Nova</Btn><Btn variant="outline" disabled={montando || !id} title={id ? "Ficha + todos os documentos em um único PDF" : "Salve a proposta primeiro"} onClick={pdfCompleto}><Files className="h-4 w-4" />{montando ? "Montando PDF..." : "PDF completo"}</Btn><Btn disabled={salvando || !!ocr} onClick={salvar}><Save className="h-4 w-4" />{salvando ? "Salvando..." : "Salvar"}</Btn></>} />
       <div className={cn("grid gap-6", arquivo ? "xl:grid-cols-2" : "xl:grid-cols-3")}>
         <div className={cn("space-y-6", !arquivo && "xl:col-span-2", "[&_[data-k]]:scroll-mt-24")} onFocusCapture={marcar} onClickCapture={marcar}>
           <Card title="Empreendimento e unidade">
@@ -470,7 +490,7 @@ function FichaA4({ s, p }: { s: State; p: Proposta }) {
   const [t1, t2, ...outros] = p.compradores;
   const segundo = t2 ?? (t1?.conjuge ? { ...({} as Proposta["compradores"][number]), nome: t1.conjuge } : undefined);
   return (
-    <article className="ft print-sheet hidden print:block">
+    <article data-ficha className="ft print-sheet hidden print:block">
       <style>{CSS_FICHA}</style>
       <header className="hd">
         <div className="flex items-center gap-3"><img src={logoRJ.url} alt="R&J Imóveis" /><h1>PROPOSTA COMERCIAL</h1></div>
