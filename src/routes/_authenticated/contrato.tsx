@@ -151,6 +151,16 @@ function Contrato() {
             ["VALOR TOTAL DAS COMISSÕES", <M>{brl(res.totalComissao)}</M>],
           ]} />
 
+          <div className="mt-3 text-[10px] font-bold uppercase">Dados dos compradores</div>
+          {p.compradores.map((c, i) => (
+            <div key={i} className="info-card"><b>{i + 1}.º TITULAR:</b> {c.nome || "—"}{c.nacionalidade ? `, ${c.nacionalidade}` : ""}{c.estadoCivil ? `, ${c.estadoCivil}` : ""}{c.profissao ? `, ${c.profissao}` : ""}{c.nascimento ? `, nascido(a) em <M>${""}</M>` : ""}, CPF <M>{c.cpf || "—"}</M>{c.rg ? `, RG <M>${c.rg}</M>` : ""}{c.conjuge ? `, cônjuge ${c.conjuge}` : ""}, endereço {c.endereco || "—"}, telefone <M>{c.telefone || "—"}</M>, e-mail {c.email || "—"}.</div>
+          ))}
+
+          <div className="mt-3 text-[10px] font-bold uppercase">Tabela de parcelas da proposta</div>
+          <Tab right={[2, 4]} head={["Quantidade", "Tipo de parcela", "Valor Unitário", "1.º Vencimento", "Valor Total da Parcela"]}
+            rows={brutas.map((l) => [<M>{l.quantidade}</M>, l.tipo, <M>{brl(l.valor)}</M>, <M>{dt(l.vencimento)}</M>, <M>{brl(totalLinha(l))}</M>])}
+            foot={["", "Preço do imóvel", "", "", <M>{brl(brutas.reduce((a, l) => a + totalLinha(l), 0))}</M>]} />
+
           <h2>4 - Condições de pagamento</h2>
           <div className="text-[10px] font-bold uppercase">Tabela 1 - Condição de Pagamento da Proposta (fluxo bruto do cliente)</div>
           <Tab right={[0, 2, 4, 5]} head={["#", "Tipo de Parcela", "Qtd", "1.º Vencimento", "Valor Unitário", "Total da Série"]}
