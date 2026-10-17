@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useState } from "react";
-import { ListPlus, Save, ShieldCheck } from "lucide-react";
+import { ListPlus, Pencil, Save, ShieldCheck, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Btn, Field, Input, PageHeader, Pill, Td, Th } from "@/components/kit";
 import { supabase } from "@/integrations/supabase/client";
