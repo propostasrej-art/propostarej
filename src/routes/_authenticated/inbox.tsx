@@ -51,7 +51,7 @@ function InboxPage() {
               <Td className="whitespace-nowrap">
                 <Btn variant="ghost" onClick={() => setView(p.id)} aria-label="Visualizar"><Eye className="h-4 w-4" /></Btn>
                 <Link to="/proposta" search={{ id: p.id }}><Btn variant="ghost" aria-label="Editar"><Pencil className="h-4 w-4" /></Btn></Link>
-                <Link to="/contrato" search={{ id: p.id, imprimir: true }} aria-label="Imprimir contrato">
+                <Link to="/contrato" search={{ id: p.id, imprimir: true }}>
                   <Btn variant="ghost" aria-label="Imprimir contrato" title="Imprimir contrato de corretagem"><Printer className="h-4 w-4" /></Btn>
                 </Link>
                 <Btn variant="danger" aria-label="Excluir" disabled={!!excluindo} onClick={() => excluir(p.id)}><Trash2 className="h-4 w-4" /></Btn>
