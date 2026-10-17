@@ -60,7 +60,7 @@ export async function lerPlanilhaMembros(file: File): Promise<string[][]> {
   const sheet = workbook.getWorksheet("Membros") ?? workbook.worksheets[0];
   if (!sheet) throw new Error("A planilha está vazia.");
   const linhas: string[][] = [];
-  for (let row = 1; row <= sheet.actualRowCount; row++) {
+  for (let row = 1; row <= sheet.rowCount; row++) {
     linhas.push(COLUNAS_MEMBROS.map((_, i) => sheet.getCell(row, i + 1).text));
   }
   return linhas;
