@@ -16,13 +16,13 @@ function Equipe() {
   const list = useStore((s) => s.membros);
   const [m, setM] = useState<Membro | null>(null);
   const save = () => { if (!m) return; setState((s) => ({ ...s, membros: s.membros.some((x) => x.id === m.id) ? s.membros.map((x) => (x.id === m.id ? m : x)) : [...s.membros, m] })); setM(null); };
-  const f = (k: keyof Membro, label: string, mono = false) => m && <Field label={label}><Input className={mono ? "font-mono" : ""} value={m[k]} onChange={(e) => setM({ ...m, [k]: e.target.value })} /></Field>;
+  const f = (k: keyof Membro, label: string, mono = false) => m && <Field label={label}><Input className={mono ? "font-mono" : ""} value={(m[k] ?? "") as string} onChange={(e) => setM({ ...m, [k]: e.target.value })} /></Field>;
   return (
     <div>
       <PageHeader title="Equipe e Cargos" actions={<Btn onClick={() => setM({ id: uid(), nome: "", apelido: "", doc: "", creci: "", telefone: "", email: "", funcao: "Corretor" })}><Plus className="h-4 w-4" />Novo membro</Btn>} />
       {m && (
         <Card className="mb-6" title="Membro">
-          <div className="grid gap-4 sm:grid-cols-3">{f("nome", "Nome")}{f("apelido", "Apelido")}{f("doc", "CPF/CNPJ", true)}{f("creci", "CRECI", true)}{f("telefone", "Telefone", true)}
+          <div className="grid gap-4 sm:grid-cols-3">{f("nome", "Nome")}{f("apelido", "Apelido")}{f("doc", "CPF/CNPJ", true)}{f("creci", "CRECI", true)}{f("telefone", "Telefone", true)}{f("email", "E-mail")}
             <Field label="Função"><Select value={m.funcao} onChange={(e) => setM({ ...m, funcao: e.target.value as Funcao })}>{FUNCOES.map((x) => <option key={x}>{x}</option>)}</Select></Field></div>
           <div className="mt-4 flex gap-2"><Btn onClick={save}>Salvar</Btn><Btn variant="outline" onClick={() => setM(null)}>Cancelar</Btn></div>
         </Card>
