@@ -145,7 +145,7 @@ function Contrato() {
           <h2>5 - Equipe de vendas e credenciais dos participantes</h2>
           <div className="text-[10px] font-bold uppercase">Tabela - Credenciais dos participantes na venda</div>
           <Tab head={["Nome", "Apelido", "CPF / CNPJ", "CRECI", "Cargo na Operação"]}
-            rows={lista.map((b) => [b.m.nome, b.m.apelido, <M>{b.m.doc}</M>, <M>{b.m.creci}</M>, <>{[...b.cargos].map((c) => <span key={c} className="badge">{c}</span>)}</>])} />
+            rows={lista.map((b) => [b.m.nome, b.m.apelido, <M>{b.m.doc}</M>, <M>{semCreci(b.m.creci) || "—"}</M>, <>{[...b.cargos].map((c) => <span key={c} className="badge">{c}</span>)}</>])} />
 
           <h2>6 - Cláusulas contratuais</h2>
           <p><b>Cláusula 1.ª — Do objeto e da natureza dos profissionais.</b> O presente instrumento tem por objeto a intermediação da aquisição do imóvel descrito na Seção 2, realizada pela CONTRATADA e pelos corretores associados relacionados na Seção 5, que atuam de forma autônoma, sem vínculo empregatício, com partilha de honorários nos termos do art. 6.º, §§ 2.º e 3.º, da Lei n.º 6.530/1978 (redação da Lei n.º 13.097/2015) e do art. 728 do Código Civil.</p>
