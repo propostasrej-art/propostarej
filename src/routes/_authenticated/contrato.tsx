@@ -68,7 +68,7 @@ function Contrato() {
   const benef = new Map<string, { m: Membro; cargos: Set<string>; valor: number }>();
   p.participantes.forEach((x) => {
     const m = s.membros.find((mm) => mm.id === x.membroId);
-    if (!m || m.funcao === "Imobiliária" || !(res.tetos[x.membroId] > 0)) return;
+    if (!m || m.funcao === "Imobiliária" || !((res.tetos[x.membroId] ?? 0) > 0)) return;
     const b = benef.get(m.id) ?? { m, cargos: new Set<string>(), valor: 0 };
     b.cargos.add(m.funcao); b.valor = res.tetos[x.membroId] ?? 0; benef.set(m.id, b);
   });
