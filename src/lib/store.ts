@@ -107,14 +107,16 @@ async function persistir(prev: State, next: State) {
     console.error(erro.error);
     toast.error("Não foi possível salvar na nuvem. Verifique sua permissão de acesso.");
     await carregar();
+    return false;
   }
+  return true;
 }
 
 export function setState(fn: (s: State) => State) {
   const prev = state;
   state = fn(prev);
   emit();
-  void persistir(prev, state);
+  return persistir(prev, state);
 }
 export function useStore<T>(sel: (s: State) => T): T {
   return sel(useSyncExternalStore((l) => { listeners.add(l); return () => listeners.delete(l); }, () => state, () => SERVER));

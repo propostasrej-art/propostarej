@@ -5,6 +5,8 @@ import { Btn, Card, Input, Mono, PageHeader, Pill, Select, Td, Th, statusTone } 
 import { setState, useStore, type Status } from "@/lib/store";
 import { brl, dt } from "@/lib/format";
 import { meta } from "@/lib/helpers";
+import { excluirDocumento, listarDocumentos } from "@/lib/documentos";
+import { toast } from "sonner";
 
 export const Route = createFileRoute("/_authenticated/inbox")({
   head: () => meta("Inbox de Propostas", "Lista de propostas com busca e filtros de status."),
@@ -16,6 +18,17 @@ function InboxPage() {
   const [q, setQ] = useState("");
   const [f, setF] = useState("Todas");
   const [view, setView] = useState<string | null>(null);
+  const [excluindo, setExcluindo] = useState<string | null>(null);
+  async function excluir(id: string) {
+    if (!confirm("Excluir proposta e todos os documentos vinculados?")) return;
+    setExcluindo(id);
+    try {
+      const documentos = await listarDocumentos(id);
+      for (const doc of documentos) await excluirDocumento(doc);
+      await setState((x) => ({ ...x, propostas: x.propostas.filter((p) => p.id !== id), envelopes: x.envelopes.filter((e) => e.propostaId !== id) }));
+    } catch { toast.error("Não foi possível excluir os documentos. A proposta foi mantida."); }
+    finally { setExcluindo(null); }
+  }
   const list = s.propostas.filter((p) => (f === "Todas" || p.status === f) &&
     `${p.unidade} ${p.compradores.map((c) => c.nome + c.cpf).join(" ")} ${s.empreendimentos.find((e) => e.id === p.empreendimentoId)?.nome}`.toLowerCase().includes(q.toLowerCase()));
   const sel = s.propostas.find((p) => p.id === view);
@@ -38,7 +51,7 @@ function InboxPage() {
               <Td className="whitespace-nowrap">
                 <Btn variant="ghost" onClick={() => setView(p.id)} aria-label="Visualizar"><Eye className="h-4 w-4" /></Btn>
                 <Link to="/proposta" search={{ id: p.id }}><Btn variant="ghost" aria-label="Editar"><Pencil className="h-4 w-4" /></Btn></Link>
-                <Btn variant="danger" aria-label="Excluir" onClick={() => confirm("Excluir proposta?") && setState((x) => ({ ...x, propostas: x.propostas.filter((y) => y.id !== p.id) }))}><Trash2 className="h-4 w-4" /></Btn>
+                <Btn variant="danger" aria-label="Excluir" disabled={!!excluindo} onClick={() => excluir(p.id)}><Trash2 className="h-4 w-4" /></Btn>
               </Td>
             </tr>
           ))}

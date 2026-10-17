@@ -18,3 +18,5 @@
 - Source highlighting: AI returns a literal quote per field; the browser OCRs the uploaded file (tesseract.js, pdfjs for PDFs) and matches quotes to word boxes via `src/lib/trechos.ts`, because model-provided coordinates are unreliable.
 - The proposal installment table groups recurring installments in the client and expands edits back into individual dated installments, preserving IDs so persistence, commission calculations and document sources keep their existing contracts.
 - Installment type names combine immutable built-ins with Cloud catalog rows; authenticated members read the catalog and only admins insert through RLS. Names are append-only to preserve historical proposal and retention keys.
+- Proposal documents use private Storage objects keyed by proposal ID and a separate metadata table with matching proposal access policies; files never use public URLs so buyer documents remain private.
+- Save proposals before uploading their pending documents, and await persistence before reporting success; original extraction uploads are archived even when extraction fails.
