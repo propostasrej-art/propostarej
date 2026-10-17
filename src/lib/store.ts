@@ -14,7 +14,7 @@ export interface Proposta {
   compradores: Comprador[]; parcelas: Parcela[]; participantes: Participacao[]; createdAt: string;
 }
 export interface Empreendimento { id: string; nome: string; endereco: string; construtora: string; honorariosPct: number; retencao: Retencao }
-export interface Membro { id: string; nome: string; apelido: string; doc: string; creci: string; telefone: string; funcao: Funcao }
+export interface Membro { id: string; nome: string; apelido: string; doc: string; creci: string; telefone: string; email?: string; funcao: Funcao }
 export type EnvStatus = "Pendente" | "Assinado" | "Rejeitado" | "Não Encontrado";
 export interface Envelope { id: string; propostaId: string; status: EnvStatus; link: string; enviadoEm: string }
 export type Papel = "Admin" | "Gerente" | "Corretor";
