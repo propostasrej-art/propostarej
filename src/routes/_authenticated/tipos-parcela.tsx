@@ -62,9 +62,15 @@ function TiposParcela() {
       {erro && <p role="alert" className="w-full text-sm text-destructive">{erro}</p>}
     </form>
     <h2 className="mb-3 flex items-center gap-2 text-base font-semibold"><ListPlus className="h-4 w-4 text-primary" />Tipos disponíveis</h2>
-    <div className="overflow-x-auto"><table className="w-full"><thead><tr><Th>Tipo de parcela</Th><Th>Origem</Th></tr></thead><tbody>
-      {TIPOS_PARCELA.map((tipo) => <tr key={tipo}><Td>{tipo}</Td><Td><Pill tone="muted">Padrão</Pill></Td></tr>)}
-      {tipos.map((tipo) => <tr key={tipo.id}><Td className="font-medium">{tipo.nome}</Td><Td><Pill>Cadastrado</Pill></Td></tr>)}
+    <div className="overflow-x-auto"><table className="w-full"><thead><tr><Th>Tipo de parcela</Th><Th>Origem</Th><Th /></tr></thead><tbody>
+      {TIPOS_PARCELA.map((tipo) => <tr key={tipo}><Td>{tipo}</Td><Td><Pill tone="muted">Padrão</Pill></Td><Td /></tr>)}
+      {tipos.map((tipo) => <tr key={tipo.id}>
+        <Td className="font-medium">{editando?.id === tipo.id
+          ? <span className="flex items-center gap-2"><Input maxLength={80} value={editando.nome} disabled={salvando} onChange={(e) => { setEditando({ ...editando, nome: e.target.value }); setErro(null); }} /><Btn onClick={salvarEdicao} disabled={salvando}><Save className="h-4 w-4" />Salvar</Btn><Btn variant="outline" onClick={() => { setEditando(null); setErro(null); }}>Cancelar</Btn></span>
+          : tipo.nome}</Td>
+        <Td><Pill>Cadastrado</Pill></Td>
+        <Td className="whitespace-nowrap"><Btn variant="ghost" aria-label={`Editar ${tipo.nome}`} onClick={() => { setEditando({ id: tipo.id, nome: tipo.nome }); setErro(null); }}><Pencil className="h-4 w-4" /></Btn><Btn variant="danger" aria-label={`Excluir ${tipo.nome}`} onClick={() => excluir(tipo.id, tipo.nome)}><Trash2 className="h-4 w-4" /></Btn></Td>
+      </tr>)}
     </tbody></table></div>
   </div>;
 }
