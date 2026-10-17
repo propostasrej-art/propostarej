@@ -8,7 +8,7 @@ import { getState, setState, useStore, type Proposta, type State, type Status } 
 import { nomesTiposParcela } from "@/lib/tipos-parcela";
 import { brl, dt, pct, uid } from "@/lib/format";
 import { meta, rateioDaProposta, somaParcelas } from "@/lib/helpers";
-import { agruparParcelas, totalLinha, vencimentoParcela, type LinhaParcelas } from "@/lib/parcelas-tabela";
+import { agruparParcelas, totalLinha } from "@/lib/parcelas-tabela";
 import { useServerFn } from "@tanstack/react-start";
 import { extrairProposta } from "@/lib/extracao.functions";
 import { nivel, pendentes, precisaRevisao, LIMIAR_REVISAO } from "@/lib/confianca";
@@ -413,96 +413,92 @@ function Ficha() {
 // O CRECI pode vir cadastrado com a palavra na frente; evita repetir a etiqueta na impressão.
 const creciFicha = (v?: string) => { const t = (v ?? "").trim().replace(/^creci\s+(jur[íi]dico\s*)?/i, "").trim(); return t ? `CRECI ${t}` : ""; };
 
+// Modelo "Proposta Comercial": azul-marinho, cinza-claro e branco, em uma folha A4.
 const CSS_FICHA = `
-@page { size: A4 portrait; margin: 12mm; }
-.ft { font-family: Arial, Helvetica, Inter, sans-serif; color: #0f172a; font-size: 11px; line-height: 1.45; }
+@page { size: A4 portrait; margin: 10mm; }
+.ft { font-family: Helvetica, Arial, Roboto, sans-serif; color: #0f172a; font-size: 10px; line-height: 1.35; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .ft .mono { font-family: "JetBrains Mono", "Roboto Mono", "Courier New", monospace; }
-.ft h2 { margin-top: 16px; margin-bottom: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid #0f172a; padding-bottom: 2px; }
-.ft table { width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 4px; }
-.ft th { background-color: #0f172a; color: #ffffff; padding: 4px 6px; text-align: left; font-weight: 600; }
-.ft td { border: 1px solid #cbd5e1; padding: 3px 6px; vertical-align: top; }
-.ft tbody tr:nth-child(even) td { background: #f8fafc; }
-.ft tfoot td { font-weight: 700; background: #f1f5f9; }
+.ft .hd { background: #1e3a5f; color: #fff; display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; gap: 12px; }
+.ft .hd h1 { font-size: 22px; font-weight: 700; letter-spacing: .5px; margin: 0; }
+.ft .hd .sub { text-align: right; font-size: 10px; }
+.ft .hd img { height: 40px; width: auto; background: #fff; border-radius: 999px; padding: 2px; }
+.ft .sec { background: #1e3a5f; color: #fff; font-weight: 700; font-size: 11px; padding: 4px 10px; margin-top: 8px; break-after: avoid; }
+.ft .grid { display: grid; border: 1px solid #cbd5e1; background: #f1f5f9; margin-top: 3px; }
+.ft .grid > div { padding: 3px 8px; border: 1px solid #fff; min-height: 28px; }
+.ft .lb { display: block; color: #64748b; font-size: 7.5px; text-transform: uppercase; letter-spacing: .3px; }
+.ft .tit { display: grid; grid-template-columns: 1fr 1fr; margin-top: 3px; border: 1px solid #cbd5e1; }
+.ft .tit > section + section { border-left: 1px solid #cbd5e1; }
+.ft .tit h3 { font-size: 10px; font-weight: 700; color: #1e3a5f; padding: 4px 8px; border-bottom: 1.5px solid #1e3a5f; margin: 0; }
+.ft .tit .grid { border: 0; margin: 0; }
+.ft table { width: 100%; border-collapse: collapse; margin-top: 3px; border: 1px solid #cbd5e1; }
+.ft th { background: #1e3a5f; color: #fff; padding: 4px 8px; text-align: left; font-size: 8.5px; font-weight: 700; text-transform: uppercase; }
+.ft td { padding: 3px 8px; border-bottom: 1px solid #e2e8f0; }
+.ft tbody tr:nth-child(even) td { background: #f1f5f9; }
+.ft tfoot td { background: #1e3a5f; color: #fff; font-weight: 700; padding: 6px 8px; font-size: 11px; }
 .ft .r { text-align: right; }
-.ft .info-card { border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 8px; margin-top: 6px; }
-.ft table, .ft tr, .ft .info-card { page-break-inside: avoid; break-inside: avoid; }
-.ft p { margin-top: 4px; }
+.ft .obs { border: 1px solid #cbd5e1; background: #f1f5f9; margin-top: 3px; padding: 3px 8px; min-height: 52px; }
+.ft .obs i { display: block; border-bottom: 1px dotted #94a3b8; height: 14px; }
+.ft .sig { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-top: 34px; text-align: center; color: #64748b; font-size: 9px; }
+.ft .sig div { border-top: 1px dotted #1e3a5f; padding-top: 3px; }
+.ft .grid, .ft table, .ft .tit, .ft .sig, .ft .obs { break-inside: avoid; }
 `;
 
 const FM = ({ children }: { children: ReactNode }) => <span className="mono">{children}</span>;
-
-const FT = ({ head, rows, foot, right = [] }: { head: string[]; rows: ReactNode[][]; foot?: ReactNode[]; right?: number[] }) => (
-  <table>
-    <thead><tr>{head.map((h, i) => <th key={h} className={right.includes(i) ? "r" : ""}>{h}</th>)}</tr></thead>
-    <tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} className={right.includes(j) ? "r" : ""}>{c}</td>)}</tr>)}</tbody>
-    {foot && <tfoot><tr>{foot.map((c, j) => <td key={j} className={right.includes(j) ? "r" : ""}>{c}</td>)}</tr></tfoot>}
-  </table>
+const Cel = ({ l, v, mono, span }: { l: string; v?: ReactNode; mono?: boolean; span?: number }) => (
+  <div style={span ? { gridColumn: `span ${span}` } : undefined}><span className="lb">{l}</span>{v ? (mono ? <FM>{v}</FM> : v) : "\u00a0"}</div>
 );
+
+function Titular({ titulo, c }: { titulo: string; c?: Proposta["compradores"][number] | undefined }) {
+  return <section><h3>{titulo}</h3><div className="grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
+    <Cel span={2} l="Nome completo" v={c?.nome} />
+    <Cel l="CPF" v={c?.cpf} mono /><Cel l="Telefone" v={c?.telefone} mono />
+    <Cel span={2} l="E-mail" v={c?.email} />
+    <Cel l="RG / Órgão" v={c?.rg} mono /><Cel l="Data de nascimento" v={c?.nascimento ? dt(c.nascimento) : ""} mono />
+    <Cel l="Estado civil" v={c?.estadoCivil} /><Cel l="Profissão" v={c?.profissao} />
+    <Cel span={2} l="Endereço" v={c?.endereco} />
+  </div></section>;
+}
 
 // Versão A4 da ficha: aparece só na impressão; a edição continua na tela.
 function FichaA4({ s, p }: { s: State; p: Proposta }) {
-  const { emp, res } = rateioDaProposta(s, p);
-  const imob = s.membros.find((m) => m.funcao === "Imobiliária");
+  const emp = s.empreendimentos.find((e) => e.id === p.empreendimentoId);
   const ls = agruparParcelas(p.parcelas);
   const preco = somaParcelas(p);
-  const comissaoDeduzida = res.eventos.reduce((a, e) => a + e.pool, 0);
-  const totalLiquido = res.eventos.reduce((a, e) => a + e.liquidaFluxo, 0);
-  const nome = imob?.nome ?? "R&J Imóveis";
-  const creci = creciFicha(imob?.creci);
-  const comPerUnit = (l: LinhaParcelas) => {
-    const pools = res.eventos.filter((e) => l.ids.includes(e.parcela.id)).map((e) => e.pool);
-    const uniforme = pools.length > 0 && pools.every((x) => Math.abs(x - (pools[0] ?? 0)) < 0.005);
-    return uniforme ? pools[0] : pools.reduce((a, x) => a + x, 0);
-  };
-  const liqGrupo = (l: LinhaParcelas) => res.eventos.filter((e) => l.ids.includes(e.parcela.id)).reduce((a, e) => a + e.liquidaFluxo, 0);
+  const membros = p.participantes.map((x) => s.membros.find((m) => m.id === x.membroId)).filter((m): m is NonNullable<typeof m> => !!m);
+  const gerentes = membros.filter((m) => /gerente/i.test(m.funcao ?? "")).map((m) => m.nome).join(", ");
+  const vendas = membros.filter((m) => !/gerente/i.test(m.funcao ?? "")).map((m) => m.nome).join(", ");
+  const [t1, t2, ...outros] = p.compradores;
+  const segundo = t2 ?? (t1?.conjuge ? { ...({} as Proposta["compradores"][number]), nome: t1.conjuge } : undefined);
   return (
     <article className="ft print-sheet hidden print:block">
       <style>{CSS_FICHA}</style>
-      <header className="flex items-center justify-between gap-4 border-b-2 pb-2" style={{ borderColor: "#0f172a" }}>
-        <img src={logoRJ.url} alt="R&J Imóveis" className="h-14 w-auto" />
-        <div className="mono text-right text-[9px]">{nome}{creci ? <><br />{creci}</> : null}</div>
+      <header className="hd">
+        <div className="flex items-center gap-3"><img src={logoRJ.url} alt="R&J Imóveis" /><h1>PROPOSTA COMERCIAL</h1></div>
+        <div className="sub">Aquisição de imóvel<br /><b>{emp?.nome ?? "—"}</b>{p.torre ? ` · Torre ${p.torre.replace(/^torre\s*/i, "")}` : ""}{p.unidade ? <> · Unidade <FM>{p.unidade}</FM></> : null}</div>
       </header>
-      <h1 className="mt-3 text-center text-[14px] font-bold uppercase">Ficha de Proposta Imobiliária</h1>
-      <p className="text-center text-[10px]">Proposta <FM>{p.id}</FM> · Emitida em {dt(new Date().toISOString().slice(0, 10))}</p>
 
-      <h2>1 - Empreendimento e imóvel</h2>
-      <FT right={[5]} head={["Empreendimento", "Unidade", "Torre", "Vaga", "Status", "VGV"]}
-        rows={[[emp?.nome ?? "—", p.unidade || "—", p.torre || "—", p.vaga || "—", p.status, <FM>{brl(p.vgv)}</FM>]]} />
+      <div className="sec">1. DADOS DO IMÓVEL E VENDAS</div>
+      <div className="grid" style={{ gridTemplateColumns: "1fr 1fr 1fr" }}>
+        <Cel l="Empreendimento" v={emp?.nome} /><Cel l="Torre" v={p.torre} /><Cel l="Unidade" v={p.unidade} mono />
+        <Cel l="Imobiliária / Corretor(a)" v={vendas} /><Cel l="Gerente" v={gerentes} /><Cel l="Vaga" v={p.vaga} mono />
+      </div>
 
-      <h2>2 - Compradores</h2>
-      {p.compradores.map((c, i) => (
-        <div key={i} className="info-card">
-          <b>{i + 1}.º TITULAR:</b> {c.nome || "—"}{c.nacionalidade ? `, ${c.nacionalidade}` : ""}{c.estadoCivil ? `, ${c.estadoCivil}` : ""}{c.profissao ? `, ${c.profissao}` : ""}{c.nascimento ? `, nascido(a) em ${dt(c.nascimento)}` : ""}, CPF <FM>{c.cpf || "—"}</FM>, RG <FM>{c.rg || "—"}</FM>{c.conjuge ? `, cônjuge ${c.conjuge}` : ""}, endereço {c.endereco || "—"}, telefone <FM>{c.telefone || "—"}</FM>, e-mail {c.email || "—"}.
-        </div>
-      ))}
+      <div className="sec">2. DADOS DOS PROPONENTES</div>
+      <div className="tit"><Titular titulo="TITULAR 01" c={t1} /><Titular titulo="TITULAR 02 / CÔNJUGE" c={segundo} /></div>
+      {outros.length > 0 && <div className="tit">{outros.map((c, i) => <Titular key={i} titulo={`TITULAR ${String(i + 3).padStart(2, "0")}`} c={c} />)}</div>}
 
-      <h2>3 - Condições de pagamento</h2>
-      <FT right={[0, 2, 5]} head={["Qtd", "Tipo de parcela", "Valor unitário", "1.º vencimento", "Último vencimento", "Total da parcela"]}
-        rows={ls.map((l) => [<FM>{l.quantidade}</FM>, l.tipo, <FM>{brl(l.valor)}</FM>, <FM>{dt(l.vencimento)}</FM>, <FM>{dt(vencimentoParcela(l.vencimento, l.tipo, l.quantidade - 1))}</FM>, <FM>{brl(totalLinha(l))}</FM>])}
-        foot={["", "Preço do imóvel", "", "", "", <FM>{brl(preco)}</FM>]} />
+      <div className="sec">3. FLUXO DE PAGAMENTO DETALHADO</div>
+      <table>
+        <thead><tr><th>Qtd</th><th>Descrição da parcela</th><th className="r">Valor unitário</th><th>Vencimento</th><th className="r">Subtotal</th></tr></thead>
+        <tbody>{ls.map((l) => <tr key={l.id}><td><FM>{l.quantidade}</FM></td><td>{l.tipo.toUpperCase()}</td><td className="r"><FM>{brl(l.valor)}</FM></td><td><FM>{dt(l.vencimento)}</FM></td><td className="r"><FM>{brl(totalLinha(l))}</FM></td></tr>)}
+          {!ls.length && <tr><td colSpan={5}>Nenhuma parcela cadastrada.</td></tr>}</tbody>
+        <tfoot><tr><td colSpan={4}>VALOR TOTAL DA PROPOSTA</td><td className="r"><FM>{brl(preco)}</FM></td></tr></tfoot>
+      </table>
 
-      <h2>4 - Valor líquido do imóvel</h2>
-      <FT right={[0, 2, 4, 5]} head={["Qtd", "Tipo de parcela", "Valor unitário", "1.º vencimento", "(–) Comissão", "Total líquido"]}
-        rows={ls.map((l) => [<FM>{l.quantidade}</FM>, l.tipo, <FM>{brl(l.valor)}</FM>, <FM>{dt(l.vencimento)}</FM>, <FM>{brl(comPerUnit(l))}</FM>, <FM>{brl(liqGrupo(l))}</FM>])}
-        foot={["", "Comissão deduzida", "", "", <FM>{brl(comissaoDeduzida)}</FM>, <FM>{brl(totalLiquido)}</FM>]} />
-
-      <h2>5 - Participantes do rateio</h2>
-      <FT right={[2, 3]} head={["Nome", "Função / CRECI", "% sobre VGV", "Comissão"]}
-        rows={p.participantes.map((x) => { const m = s.membros.find((mm) => mm.id === x.membroId); const c = creciFicha(m?.creci); return [m?.nome ?? "—", `${m?.funcao ?? "—"}${c ? ` · ${c}` : ""}`, <FM>{pct(x.pct)}</FM>, <FM>{brl(res.tetos[x.membroId] ?? 0)}</FM>]; })}
-        foot={["Total", "", <FM>{pct(p.participantes.reduce((a, b) => a + b.pct, 0))}</FM>, <FM>{brl(res.totalComissao)}</FM>]} />
-
-      <h2>6 - Validação do VGV</h2>
-      <FT right={[1]} head={["Descrição", "Valor"]} rows={[
-        ["VGV", <FM>{brl(p.vgv)}</FM>],
-        ["Soma das parcelas", <FM>{brl(preco)}</FM>],
-        ["Cobertura", <FM>{pct(p.vgv ? (preco / p.vgv) * 100 : 0)}</FM>],
-        ["Diferença", <FM>{brl(p.vgv - preco)}</FM>],
-      ]} />
-
-      <footer className="mt-6 border-t pt-2 text-center">
-        <img src={logoRJ.url} alt="" className="mx-auto h-10 w-auto" />
-        <p className="mono text-[9px]">{nome}{creci ? ` · ${creci}` : ""}</p>
-      </footer>
+      <div className="sec">4. OBSERVAÇÕES, CONDIÇÕES ESPECIAIS E ASSINATURAS</div>
+      <div className="obs"><span className="lb">Observações e condições especiais</span><i /><i /><i /></div>
+      <div className="sig"><div>Assinatura do Proponente 01<br />{t1?.nome || "\u00a0"}</div><div>Assinatura do Proponente 02<br />{segundo?.nome || "\u00a0"}</div></div>
+      <p className="mt-4 text-center text-[9px]" style={{ color: "#64748b" }}>Local e data: ______________________________, ____ de ______________ de ______</p>
     </article>
   );
 }
