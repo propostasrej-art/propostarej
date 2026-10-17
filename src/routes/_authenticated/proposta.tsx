@@ -14,8 +14,12 @@ import { nivel, pendentes, precisaRevisao, LIMIAR_REVISAO } from "@/lib/confianc
 import { cn } from "@/lib/utils";
 import { Check, ShieldAlert, FileText, Camera } from "lucide-react";
 import { DocViewer } from "@/components/DocViewer";
+import { BancoDocumentos } from "@/components/BancoDocumentos";
+import { chaveDocumentos, guardarDocumento, listarDocumentos, type DocumentoLocal } from "@/lib/documentos";
+import { validarDocumento } from "@/lib/documentos-regras";
+import { useQueryClient } from "@tanstack/react-query";
 
-type Doc = { id: string; slot: string; tipo: string; file: File; trechos: Record<string, string>; rotulos: Record<string, string> };
+type Doc = DocumentoLocal;
 const SLOTS_FIXOS = ["Documento de identidade (RG/CNH)", "CPF", "Comprovante de residência", "Comprovante de estado civil", "Proposta"];
 // Campos do comprador que cada tipo de documento pode preencher
 const CAMPOS_DOC: Record<string, string[]> = {
@@ -60,6 +64,8 @@ function Ficha() {
   const nav = useNavigate();
   const s = useStore((x) => x);
   const [p, setP] = useState<Proposta>(vazia);
+  const cache = useQueryClient();
+  const [salvando, setSalvando] = useState(false);
   const [ocr, setOcr] = useState<string | null>(null);
   const extrair = useServerFn(extrairProposta);
   const [conf, setConf] = useState<Record<string, number>>({});
@@ -95,11 +101,24 @@ function Ficha() {
   const soma = somaParcelas(p);
   const ok = p.vgv > 0 && Math.abs(soma - p.vgv) < 0.01;
 
-  function salvar() {
+  async function salvar() {
     if (pend.length && !confirm(`${pend.length} campo(s) extraído(s) com baixa confiança ainda não foram revisados. Salvar mesmo assim?`)) { toast.warning("Revise os campos destacados antes de salvar."); return; }
-    setState((st) => ({ ...st, propostas: st.propostas.some((x) => x.id === p.id) ? st.propostas.map((x) => (x.id === p.id ? p : x)) : [...st.propostas, p] }));
-    toast.success("Proposta salva");
-    nav({ to: "/proposta", search: { id: p.id } });
+    setSalvando(true);
+    try {
+      const sucesso = await setState((st) => ({ ...st, propostas: st.propostas.some((x) => x.id === p.id) ? st.propostas.map((x) => (x.id === p.id ? p : x)) : [...st.propostas, p] }));
+      if (!sucesso) return;
+      const existentes = await listarDocumentos(p.id);
+      for (const doc of docs.filter((d) => !d.salvo && !existentes.some((x) => x.id === d.id))) {
+        await guardarDocumento(p.id, doc);
+        setDocs((ds) => ds.map((d) => d.id === doc.id ? { ...d, salvo: true } : d));
+      }
+      await cache.invalidateQueries({ queryKey: chaveDocumentos(p.id) });
+      toast.success("Proposta e documentos salvos.");
+      // Avoid resetting the extracted field sources after the first save.
+      if (id !== p.id) manterDocumentos.current = true;
+      await nav({ to: "/proposta", search: { id: p.id } });
+    } catch { toast.error("A proposta foi salva, mas alguns documentos não. Clique em Salvar para tentar novamente."); }
+    finally { setSalvando(false); }
   }
   async function onFile(f0: File | undefined, tipo: string, slot: string) {
     if (!f0) return;
@@ -109,6 +128,9 @@ function Ficha() {
     let f = f0;
     if (mime.startsWith("image/")) { try { f = await otimizarImagem(f0); } catch { toast.error("Imagem corrompida."); return; } }
     if (f.size > 10 * 1024 * 1024) { toast.error("Arquivo acima de 10 MB."); return; }
+    const docId = uid();
+    // Archive the original upload even when AI extraction fails.
+    setDocs((ds) => [...ds, { id: docId, slot, tipo, file: f0, trechos: {}, rotulos: {} }]);
     setOcr(slot);
     try {
       const base64 = await new Promise<string>((ok, err) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] ?? ""); r.onerror = err; r.readAsDataURL(f); });
@@ -116,7 +138,6 @@ function Ficha() {
       if (!out.ok) { toast.error(out.erro); return; }
       const d = out.dados;
       const isProp = tipo === "Proposta";
-      const docId = uid();
       const nc: Record<string, number> = {};
       const tr: Record<string, string> = {};
       const rot: Record<string, string> = {};
@@ -156,7 +177,7 @@ function Ficha() {
       if (naoAchados.length) toast.info(`Não encontrados na Equipe: ${naoAchados.join(", ")}.`);
       setConf((c) => ({ ...c, ...nc }));
       setOrigem((o) => ({ ...o, ...Object.fromEntries(Object.keys(tr).map((k) => [k, docId])) }));
-      setDocs((ds) => [...ds.filter((x) => x.slot !== slot), { id: docId, slot, tipo, file: f, trechos: tr, rotulos: rot }]);
+      setDocs((ds) => ds.map((x) => x.id === docId ? { ...x, trechos: tr, rotulos: rot } : x));
       setDocAtivo(docId); setAtivo(null);
       setP((cur) => ({
         ...cur,
@@ -179,11 +200,16 @@ function Ficha() {
     } finally { setOcr(null); }
   }
   const slots = [...SLOTS_FIXOS.map((t) => ({ slot: t, tipo: t, extra: false })), ...extras.map((e, i) => ({ slot: e, tipo: `Documento adicional ${i + 1}`, extra: true }))];
+  const removerDoc = (docId: string) => {
+    setDocs((ds) => ds.filter((d) => d.id !== docId));
+    setOrigem((o) => Object.fromEntries(Object.entries(o).filter(([, v]) => v !== docId)));
+    if (docAtivo === docId) { setDocAtivo(null); setAtivo(null); }
+  };
 
   return (
     <div>
       <PageHeader title="Extração & Ficha da Proposta" subtitle={id ? `Editando proposta ${id}` : "Nova proposta"}
-        actions={<><Btn variant="outline" onClick={() => nav({ to: "/proposta", search: { id: undefined } })}>Nova</Btn><Btn onClick={salvar}><Save className="h-4 w-4" />Salvar</Btn></>} />
+        actions={<><Btn variant="outline" disabled={salvando || !!ocr} onClick={() => nav({ to: "/proposta", search: { id: undefined } })}>Nova</Btn><Btn disabled={salvando || !!ocr} onClick={salvar}><Save className="h-4 w-4" />{salvando ? "Salvando..." : "Salvar"}</Btn></>} />
       <div className={cn("grid gap-6", arquivo ? "xl:grid-cols-2" : "xl:grid-cols-3")}>
         <div className={cn("space-y-6", !arquivo && "xl:col-span-2", "[&_[data-k]]:scroll-mt-24")} onFocusCapture={marcar} onClickCapture={marcar}>
           <Card title="Empreendimento e unidade">
@@ -239,10 +265,22 @@ function Ficha() {
           </Card>
         </div>
         <div className="space-y-6">
+          <BancoDocumentos propostaId={p.id} salva={s.propostas.some((x) => x.id === p.id)} locais={docs} disabled={salvando || !!ocr}
+            onAdd={(files, tipo) => {
+              const novos: Doc[] = [];
+              for (const file of files) {
+                const erro = validarDocumento(file);
+                if (erro) { toast.error(`${file.name}: ${erro}`); continue; }
+                novos.push({ id: uid(), slot: uid(), tipo, file, trechos: {}, rotulos: {} });
+              }
+              setDocs((ds) => [...ds, ...novos]);
+            }}
+            onOpen={(d) => { setDocs((ds) => [...ds.filter((x) => x.id !== d.id), d]); setDocAtivo(d.id); setAtivo(null); setOrigem((o) => ({ ...o, ...Object.fromEntries(Object.keys(d.trechos).map((k) => [k, d.id])) })); }}
+            onRemove={removerDoc} />
           <Card title="Documentos para extração" action={<Btn variant="ghost" onClick={() => setExtras((e) => [...e, uid()])}><Plus className="h-4 w-4" />Adicionar documento</Btn>}>
             <div className="space-y-2">
               {slots.map(({ slot, tipo, extra }) => {
-                const d = docs.find((x) => x.slot === slot);
+                const d = docs.findLast((x) => x.slot === slot);
                 const lendo = ocr === slot;
                 return (
                   <div key={slot} onDragOver={(e) => { e.preventDefault(); setSobre(slot); }} onDragLeave={() => setSobre((x) => (x === slot ? null : x))}
@@ -261,7 +299,7 @@ function Ficha() {
                       <Camera className="h-3.5 w-3.5" /><span className="sr-only">Câmera</span>
                       <input type="file" disabled={!!ocr} accept="image/*" capture="environment" className="hidden" onChange={(e) => { onFile(e.target.files?.[0], extra ? "Documento adicional" : tipo, slot); e.target.value = ""; }} />
                     </label>
-                    {extra && <Btn variant="danger" className="px-2" onClick={() => { setExtras((x) => x.filter((y) => y !== slot)); setDocs((ds) => ds.filter((y) => y.slot !== slot)); }}><Trash2 className="h-4 w-4" /></Btn>}
+                    {extra && <Btn variant="danger" className="px-2" onClick={() => { setExtras((x) => x.filter((y) => y !== slot)); }}><Trash2 className="h-4 w-4" /></Btn>}
                   </div>
                 );
               })}
