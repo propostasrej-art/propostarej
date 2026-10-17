@@ -34,7 +34,7 @@ export function ParcelasTable({ parcelas, onChange, revisar, indicador, destaque
     atualizar([...linhas, { id, ids: [id], quantidade: 1, tipo: "Mensal", valor: 0, vencimento: new Date().toISOString().slice(0, 10) }]);
   }}><Plus className="h-4 w-4" />Adicionar parcela</Btn>}>
     <div className="overflow-x-auto"><table className="w-full min-w-[780px]"><thead><tr>
-      <Th>Quantidade</Th><Th>Tipo de parcela</Th><Th>Valor Unitário</Th><Th>1.º vencimento</Th><Th>Valor Total da Parcela</Th><Th />
+      <Th>Quantidade</Th><Th>Tipo de parcela</Th><Th className="text-right">Valor Unitário</Th><Th>1.º vencimento</Th><Th className="text-right">Valor Total da Parcela</Th><Th />
     </tr></thead><tbody>
       {linhas.map((linha, indice) => {
         const alterar = (patch: Partial<LinhaParcelas>) => {
@@ -44,13 +44,13 @@ export function ParcelasTable({ parcelas, onChange, revisar, indicador, destaque
         return <tr key={linha.id} data-k={`p:${linha.ids[0]}`} className={destaque(linha.ids)}>
           <Td><Input aria-label={`Quantidade ${indice + 1}`} type="number" min="1" step="1" className="w-24 font-mono" value={linha.quantidade} onChange={(e) => alterar({ quantidade: Math.max(1, Math.trunc(Number(e.target.value) || 1)) })} /></Td>
           <Td><Select aria-label={`Tipo de parcela ${indice + 1}`} className="min-w-44" value={linha.tipo} onChange={(e) => alterar({ tipo: e.target.value as TipoParcela })}>{tipos.map((tipo) => <option key={tipo}>{tipo}</option>)}</Select></Td>
-          <Td><Input aria-label={`Valor Unitário ${indice + 1}`} type="number" min="0" step="0.01" className="min-w-32 font-mono" value={linha.valor || ""} onChange={(e) => alterar({ valor: Math.max(0, Number(e.target.value)) })} /></Td>
+          <Td><Input aria-label={`Valor Unitário ${indice + 1}`} type="number" min="0" step="0.01" className="min-w-32 font-mono text-right" value={linha.valor || ""} onChange={(e) => alterar({ valor: Math.max(0, Number(e.target.value)) })} /></Td>
           <Td><Input aria-label={`1.º vencimento ${indice + 1}`} type="date" className="min-w-36 font-mono" value={linha.vencimento} onChange={(e) => alterar({ vencimento: e.target.value })} /></Td>
-          <Td><Mono className="whitespace-nowrap font-semibold text-success">{brl(totalLinha(linha))}</Mono></Td>
+          <Td className="text-right"><Mono className="whitespace-nowrap font-semibold text-success">{brl(totalLinha(linha))}</Mono></Td>
           <Td><div className="flex items-center gap-1">{linha.ids.map((id) => <span key={id} data-k={`p:${id}`}>{indicador(id)}</span>)}<Btn variant="danger" aria-label={`Excluir parcela ${indice + 1}`} title="Excluir parcela" onClick={() => { linha.ids.forEach(revisar); atualizar(linhas.filter((_, i) => i !== indice)); }}><Trash2 className="h-4 w-4" /></Btn></div></Td>
         </tr>;
       })}
       {!linhas.length && <tr><td colSpan={6} className="py-6 text-center text-sm text-muted-foreground">Nenhuma parcela cadastrada.</td></tr>}
-    </tbody><tfoot><tr><td colSpan={4} className="px-3 pt-4 text-right text-sm font-semibold">Total</td><td className="px-3 pt-4"><Mono className="whitespace-nowrap font-semibold text-success">{brl(linhas.reduce((total, linha) => total + totalLinha(linha), 0))}</Mono></td><td /></tr></tfoot></table></div>
+    </tbody><tfoot><tr><td colSpan={4} className="px-3 pt-4 text-right text-sm font-semibold">Total</td><td className="px-3 pt-4 text-right"><Mono className="whitespace-nowrap font-semibold text-success">{brl(linhas.reduce((total, linha) => total + totalLinha(linha), 0))}</Mono></td><td /></tr></tfoot></table></div>
   </Card>;
 }

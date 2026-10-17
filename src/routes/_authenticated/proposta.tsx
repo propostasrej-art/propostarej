@@ -259,7 +259,7 @@ function Ficha() {
             return (
               <Card title="Tabela de valor líquido do imóvel">
                 <div className="overflow-x-auto"><table className="w-full min-w-[560px]"><thead><tr>
-                  <Th>Quantidade</Th><Th>Tipo de parcela</Th><Th>Valor unitário</Th><Th>1.º vencimento</Th><Th>(–) Comissão</Th><Th>Total líquido</Th>
+                  <Th>Quantidade</Th><Th>Tipo de parcela</Th><Th className="text-right">Valor unitário</Th><Th>1.º vencimento</Th><Th className="text-right">(–) Comissão</Th><Th className="text-right">Total líquido</Th>
                 </tr></thead><tbody>
                   {agruparParcelas(p.parcelas).map((l) => {
                     const evs = res.eventos.filter((e) => l.ids.includes(e.parcela.id));
@@ -270,10 +270,10 @@ function Ficha() {
                       <tr key={l.id} className={protegida ? "bg-muted/50" : ""}>
                         <Td><Mono>{l.quantidade}</Mono></Td>
                         <Td>{l.tipo}</Td>
-                        <Td><Mono>{brl(l.valor)}</Mono></Td>
+                        <Td className="text-right"><Mono>{brl(l.valor)}</Mono></Td>
                         <Td><Mono>{dt(l.vencimento)}</Mono></Td>
-                        <Td><Mono className={protegida ? "text-muted-foreground" : ""}>{uniforme ? brl(pools[0]) : brl(pools.reduce((a, x) => a + x, 0))}</Mono></Td>
-                        <Td><Mono className="whitespace-nowrap font-semibold text-success">{brl(evs.reduce((a, e) => a + e.liquidaFluxo, 0))}</Mono></Td>
+                        <Td className="text-right"><Mono className={protegida ? "text-muted-foreground" : ""}>{uniforme ? brl(pools[0]) : brl(pools.reduce((a, x) => a + x, 0))}</Mono></Td>
+                        <Td className="text-right"><Mono className="whitespace-nowrap font-semibold text-success">{brl(evs.reduce((a, e) => a + e.liquidaFluxo, 0))}</Mono></Td>
                       </tr>
                     );
                   })}
@@ -282,15 +282,15 @@ function Ficha() {
                 <div className="mt-3 rounded-lg border-t-2 border-border bg-muted/40 p-3">
                   <div className="flex items-baseline justify-between gap-3 py-0.5">
                     <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Preço do imóvel</span>
-                    <Mono className="whitespace-nowrap text-sm font-bold">{brl(precoImovel)}</Mono>
+                    <Mono className="whitespace-nowrap text-right text-sm font-bold">{brl(precoImovel)}</Mono>
                   </div>
                   <div className="flex items-baseline justify-between gap-3 py-0.5">
                     <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Comissão deduzida</span>
-                    <Mono className="whitespace-nowrap text-sm font-bold text-destructive">– {brl(comissaoDeduzida)}</Mono>
+                    <Mono className="whitespace-nowrap text-right text-sm font-bold text-destructive">– {brl(comissaoDeduzida)}</Mono>
                   </div>
                   <div className="mt-2 flex items-baseline justify-between gap-3 rounded-md bg-success/10 px-3 py-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-success">Valor líquido</span>
-                    <Mono className="whitespace-nowrap text-base font-bold text-success">{brl(totalLiquido)}</Mono>
+                    <Mono className="whitespace-nowrap text-right text-base font-bold text-success">{brl(totalLiquido)}</Mono>
                   </div>
                 </div>
                 <p className="mt-3 text-xs text-muted-foreground">Parcelas protegidas (Financiamento Bancário, FGTS, Subsídio) não deduzem comissão; o líquido delas é o valor integral.</p>
