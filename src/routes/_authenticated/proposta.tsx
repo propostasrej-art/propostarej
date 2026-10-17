@@ -90,6 +90,17 @@ function Ficha() {
   const marcar = (e: React.SyntheticEvent) => { const k = (e.target as HTMLElement).closest("[data-k]")?.getAttribute("data-k"); if (k) { setAtivo(k); if (origem[k]) setDocAtivo(origem[k]!); } };
   const pick = (k: string) => { setAtivo(k); const el = document.querySelector<HTMLElement>(`[data-k="${k}"]`); (el?.matches("input,select") ? el : el?.querySelector<HTMLElement>("input,select"))?.focus({ preventScroll: false }); };
   useEffect(() => { if (manterDocumentos.current) { manterDocumentos.current = false; return; } const f = id && getState().propostas.find((x) => x.id === id); setP(f ? structuredClone(f) : vazia()); setConf({}); setDocs([]); setDocAtivo(null); setOrigem({}); setExtras([]); setAtivo(null); }, [id]);
+  const impresso = useRef(false);
+  // Quando a ficha é aberta do Inbox (?imprimir=true), imprime a versão A4 sozinha.
+  useEffect(() => {
+    if (!imprimir || impresso.current || !id || !s.carregado) return;
+    impresso.current = true;
+    setTimeout(() => {
+      window.print();
+      // Tira a flag da URL para um F5 não reabrir a impressão sozinho.
+      nav({ to: "/proposta", search: { id, imprimir: false }, replace: true });
+    }, 350);
+  }, [imprimir, id, s.carregado, nav]);
   const revisar = (k: string) => setConf((c) => { if (!(k in c)) return c; const n = { ...c }; delete n[k]; return n; });
   const rc = (k: string) => (precisaRevisao(conf[k]) ? (nivel(conf[k]!) === "baixa" ? "border-destructive bg-destructive/5 ring-2 ring-destructive/20" : "border-warn bg-warn/10 ring-2 ring-warn/25") : "");
   const L = (label: string, k: string) => {
@@ -218,6 +229,7 @@ function Ficha() {
 
   return (
     <div>
+      <div className="print:hidden">
       <PageHeader title="Extração & Ficha da Proposta" subtitle={id ? `Editando proposta ${id}` : "Nova proposta"}
         actions={<><Btn variant="outline" disabled={salvando || !!ocr} onClick={() => nav({ to: "/proposta", search: { id: undefined } })}>Nova</Btn><Btn disabled={salvando || !!ocr} onClick={salvar}><Save className="h-4 w-4" />{salvando ? "Salvando..." : "Salvar"}</Btn></>} />
       <div className={cn("grid gap-6", arquivo ? "xl:grid-cols-2" : "xl:grid-cols-3")}>
@@ -392,6 +404,8 @@ function Ficha() {
           </Card>
         </div>
       </div>
+      </div>
+      <FichaA4 s={s} p={p} />
     </div>
   );
 }
