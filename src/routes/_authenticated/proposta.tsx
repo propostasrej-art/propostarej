@@ -223,7 +223,10 @@ function Ficha() {
       if (naoAchados.length) toast.info(`Não encontrados na Equipe: ${naoAchados.join(", ")}.`);
       setConf((c) => ({ ...c, ...nc }));
       setOrigem((o) => ({ ...o, ...Object.fromEntries(Object.keys(tr).map((k) => [k, docId])) }));
-      setDocs((ds) => ds.map((x) => x.id === docId ? { ...x, trechos: tr, rotulos: rot } : x));
+      // Documentos vindos do banco entram no estado local para guardar trechos e alimentar o visualizador.
+      setDocs((ds) => ds.some((x) => x.id === docId)
+        ? ds.map((x) => x.id === docId ? { ...x, trechos: tr, rotulos: rot } : x)
+        : [...ds, { id: docId, slot: tipo, tipo, file: f, trechos: tr, rotulos: rot, salvo: true }]);
       setDocAtivo(docId); setAtivo(null);
       setP((cur) => ({
         ...cur,
