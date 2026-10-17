@@ -278,20 +278,21 @@ function Ficha() {
                     );
                   })}
                   {!res.eventos.length && <tr><td colSpan={6} className="py-6 text-center text-sm text-muted-foreground">Nenhuma parcela cadastrada.</td></tr>}
-                </tbody><tfoot>
-                  <tr className="border-t-2 border-border">
-                    <td colSpan={4} className="px-3 pt-4 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Preço do imóvel</td>
-                    <td colSpan={2} className="px-3 pt-4 text-right"><Mono className="whitespace-nowrap text-sm font-bold">{brl(precoImovel)}</Mono></td>
-                  </tr>
-                  <tr>
-                    <td colSpan={4} className="px-3 py-1 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Comissão deduzida</td>
-                    <td colSpan={2} className="px-3 py-1 text-right"><Mono className="whitespace-nowrap text-sm font-bold text-destructive">– {brl(comissaoDeduzida)}</Mono></td>
-                  </tr>
-                  <tr className="bg-success/5">
-                    <td colSpan={4} className="px-3 pb-3 text-right text-xs font-bold uppercase tracking-wider text-success-foreground">Valor líquido</td>
-                    <td colSpan={2} className="px-3 pb-3 text-right"><Mono className="whitespace-nowrap text-base font-bold text-success">{brl(totalLiquido)}</Mono></td>
-                  </tr>
-                </tfoot></table></div>
+                </tbody></table></div>
+                <div className="mt-3 rounded-lg border-t-2 border-border bg-muted/40 p-3">
+                  <div className="flex items-baseline justify-between gap-3 py-0.5">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Preço do imóvel</span>
+                    <Mono className="whitespace-nowrap text-sm font-bold">{brl(precoImovel)}</Mono>
+                  </div>
+                  <div className="flex items-baseline justify-between gap-3 py-0.5">
+                    <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Comissão deduzida</span>
+                    <Mono className="whitespace-nowrap text-sm font-bold text-destructive">– {brl(comissaoDeduzida)}</Mono>
+                  </div>
+                  <div className="mt-2 flex items-baseline justify-between gap-3 rounded-md bg-success/10 px-3 py-2">
+                    <span className="text-xs font-bold uppercase tracking-wider text-success">Valor líquido</span>
+                    <Mono className="whitespace-nowrap text-base font-bold text-success">{brl(totalLiquido)}</Mono>
+                  </div>
+                </div>
                 <p className="mt-3 text-xs text-muted-foreground">Parcelas protegidas (Financiamento Bancário, FGTS, Subsídio) não deduzem comissão; o líquido delas é o valor integral.</p>
               </Card>
             ); })()}
