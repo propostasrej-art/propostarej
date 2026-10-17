@@ -9,6 +9,7 @@ import type { ParcelaIn } from "@/lib/rateio";
 import { agruparParcelas, totalLinha, vencimentoParcela, type LinhaParcelas } from "@/lib/parcelas-tabela";
 import { brl, dt, uid } from "@/lib/format";
 import { meta, rateioDaProposta } from "@/lib/helpers";
+import logoRJ from "@/assets/logorj.png.asset.json";
 
 export const Route = createFileRoute("/_authenticated/contrato")({
   head: () => meta("Contrato de Corretagem", "Contrato de Prestação de Serviços de Corretagem Imobiliária com Rateio de Honorários em A4."),
@@ -170,6 +171,10 @@ function Contrato() {
             {lista.map((b) => <div key={b.m.id} className="sig-box">{b.m.nome}<br /><M>CRECI {b.m.creci}</M><br />CORRETOR ASSOCIADO</div>)}
             {[1, 2].map((n) => <div key={n} className="sig-box">TESTEMUNHA {n}<br />Nome: ______________________<br />CPF: _______________________</div>)}
           </div>
+          <footer className="mt-8 flex flex-col items-center gap-2 border-t pt-4" style={{ borderColor: "#0f172a" }}>
+            <img src={logoRJ.url} alt="R&J Imóveis" className="h-20 w-auto" />
+            <p className="mono text-[9px] !text-center">{imob?.nome ?? "R&J Imóveis"}{imob?.creci ? ` · CRECI ${imob.creci}` : ""}</p>
+          </footer>
         </article>
       </div>
     </div>
