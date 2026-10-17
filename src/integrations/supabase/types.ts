@@ -53,6 +53,53 @@ export type Database = {
         }
         Relationships: []
       }
+      documentos_proposta: {
+        Row: {
+          caminho: string
+          created_at: string
+          id: string
+          mime: string
+          nome: string
+          proposta_id: string
+          rotulos: Json
+          tamanho: number
+          tipo: string
+          trechos: Json
+        }
+        Insert: {
+          caminho: string
+          created_at?: string
+          id: string
+          mime: string
+          nome: string
+          proposta_id: string
+          rotulos?: Json
+          tamanho: number
+          tipo: string
+          trechos?: Json
+        }
+        Update: {
+          caminho?: string
+          created_at?: string
+          id?: string
+          mime?: string
+          nome?: string
+          proposta_id?: string
+          rotulos?: Json
+          tamanho?: number
+          tipo?: string
+          trechos?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documentos_proposta_proposta_id_fkey"
+            columns: ["proposta_id"]
+            isOneToOne: false
+            referencedRelation: "propostas"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       empreendimentos: {
         Row: {
           dados: Json
