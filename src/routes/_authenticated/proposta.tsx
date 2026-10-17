@@ -6,7 +6,7 @@ import { Btn, Card, Field, Input, Mono, PageHeader, Select, Td, Th } from "@/com
 import { ParcelasTable } from "@/components/ParcelasTable";
 import { getState, setState, useStore, type Proposta, type Status } from "@/lib/store";
 import { nomesTiposParcela } from "@/lib/tipos-parcela";
-import { brl, pct, uid } from "@/lib/format";
+import { brl, dt, pct, uid } from "@/lib/format";
 import { meta, rateioDaProposta, somaParcelas } from "@/lib/helpers";
 import { useServerFn } from "@tanstack/react-start";
 import { extrairProposta } from "@/lib/extracao.functions";
