@@ -278,8 +278,8 @@ function Ficha() {
                   })}
                   {!res.eventos.length && <tr><td colSpan={6} className="py-6 text-center text-sm text-muted-foreground">Nenhuma parcela cadastrada.</td></tr>}
                 </tbody><tfoot><tr>
-                  <td colSpan={2} className="px-3 pt-4 text-right text-sm font-semibold">Total</td>
-                  <td className="px-3 pt-4"><Mono className="whitespace-nowrap font-semibold">{brl(somaParcelas(p))}</Mono></td>
+                  <td colSpan={4} className="px-3 pt-4 text-right text-sm font-semibold">Total</td>
+                  <td className="px-3 pt-4"><Mono className="whitespace-nowrap font-semibold">{brl(res.eventos.reduce((a, e) => a + e.pool, 0))}</Mono></td>
                   <td className="px-3 pt-4"><Mono className="whitespace-nowrap font-semibold">{brl(res.eventos.reduce((a, e) => a + e.pool, 0))}</Mono></td>
                   <td className="px-3 pt-4"><Mono className="whitespace-nowrap font-semibold text-success">{brl(totalLiquido)}</Mono></td>
                 </tr></tfoot></table></div>
