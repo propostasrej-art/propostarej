@@ -32,13 +32,17 @@ export function validarPlanilhaMembros(linhas: string[][], existentes: Membro[])
   });
 }
 
-export async function baixarModeloMembros() {
+export async function baixarModeloMembros(membros: Membro[] = []) {
   const { Workbook } = await import("exceljs");
   const workbook = new Workbook();
   const sheet = workbook.addWorksheet("Membros");
-  sheet.columns = COLUNAS_MEMBROS.map((header) => ({ header, width: header === "Nome" || header === "E-mail" ? 32 : 24, style: { numFmt: "@" } }));
+  const colunas = [...COLUNAS_MEMBROS, "Gerente", "Diretor"];
+  sheet.columns = colunas.map((header) => ({ header, width: header === "Nome" || header === "E-mail" ? 32 : 20, style: { numFmt: "@" } }));
   sheet.views = [{ state: "frozen", ySplit: 1 }];
-  sheet.autoFilter = "A1:G1";
+  sheet.autoFilter = "A1:I1";
+  membros.forEach((m, i) => {
+    sheet.getRow(i + 2).values = [m.nome, m.apelido, m.doc, m.creci, m.telefone, m.email ?? "", m.funcao, m.funcao === "Gerente" ? "✓" : "—", m.funcao === "Diretor Comercial" ? "✓" : "—"];
+  });
   for (let row = 2; row <= 1001; row++) {
     sheet.getCell(row, 7).dataValidation = { type: "list", allowBlank: false, formulae: [`"${FUNCOES_MEMBROS.join(",")}"`], showErrorMessage: true, errorTitle: "Função inválida", error: "Selecione uma função da lista." };
   }
