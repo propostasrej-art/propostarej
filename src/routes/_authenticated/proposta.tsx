@@ -409,3 +409,100 @@ function Ficha() {
     </div>
   );
 }
+
+// O CRECI pode vir cadastrado com a palavra na frente; evita repetir a etiqueta na impressão.
+const creciFicha = (v?: string) => { const t = (v ?? "").trim().replace(/^creci\s+(jur[íi]dico\s*)?/i, "").trim(); return t ? `CRECI ${t}` : ""; };
+
+const CSS_FICHA = `
+@page { size: A4 portrait; margin: 12mm; }
+.ft { font-family: Arial, Helvetica, Inter, sans-serif; color: #0f172a; font-size: 11px; line-height: 1.45; }
+.ft .mono { font-family: "JetBrains Mono", "Roboto Mono", "Courier New", monospace; }
+.ft h2 { margin-top: 16px; margin-bottom: 4px; font-size: 11px; font-weight: 700; text-transform: uppercase; border-bottom: 2px solid #0f172a; padding-bottom: 2px; }
+.ft table { width: 100%; border-collapse: collapse; font-size: 10px; margin-top: 4px; }
+.ft th { background-color: #0f172a; color: #ffffff; padding: 4px 6px; text-align: left; font-weight: 600; }
+.ft td { border: 1px solid #cbd5e1; padding: 3px 6px; vertical-align: top; }
+.ft tbody tr:nth-child(even) td { background: #f8fafc; }
+.ft tfoot td { font-weight: 700; background: #f1f5f9; }
+.ft .r { text-align: right; }
+.ft .info-card { border: 1px solid #cbd5e1; border-radius: 4px; padding: 6px 8px; margin-top: 6px; }
+.ft table, .ft tr, .ft .info-card { page-break-inside: avoid; break-inside: avoid; }
+.ft p { margin-top: 4px; }
+`;
+
+const FM = ({ children }: { children: ReactNode }) => <span className="mono">{children}</span>;
+
+const FT = ({ head, rows, foot, right = [] }: { head: string[]; rows: ReactNode[][]; foot?: ReactNode[]; right?: number[] }) => (
+  <table>
+    <thead><tr>{head.map((h, i) => <th key={h} className={right.includes(i) ? "r" : ""}>{h}</th>)}</tr></thead>
+    <tbody>{rows.map((r, i) => <tr key={i}>{r.map((c, j) => <td key={j} className={right.includes(j) ? "r" : ""}>{c}</td>)}</tr>)}</tbody>
+    {foot && <tfoot><tr>{foot.map((c, j) => <td key={j} className={right.includes(j) ? "r" : ""}>{c}</td>)}</tr></tfoot>}
+  </table>
+);
+
+// Versão A4 da ficha: aparece só na impressão; a edição continua na tela.
+function FichaA4({ s, p }: { s: State; p: Proposta }) {
+  const { emp, res } = rateioDaProposta(s, p);
+  const imob = s.membros.find((m) => m.funcao === "Imobiliária");
+  const ls = agruparParcelas(p.parcelas);
+  const preco = somaParcelas(p);
+  const comissaoDeduzida = res.eventos.reduce((a, e) => a + e.pool, 0);
+  const totalLiquido = res.eventos.reduce((a, e) => a + e.liquidaFluxo, 0);
+  const nome = imob?.nome ?? "R&J Imóveis";
+  const creci = creciFicha(imob?.creci);
+  const comPerUnit = (l: LinhaParcelas) => {
+    const pools = res.eventos.filter((e) => l.ids.includes(e.parcela.id)).map((e) => e.pool);
+    const uniforme = pools.length > 0 && pools.every((x) => Math.abs(x - (pools[0] ?? 0)) < 0.005);
+    return uniforme ? pools[0] : pools.reduce((a, x) => a + x, 0);
+  };
+  const liqGrupo = (l: LinhaParcelas) => res.eventos.filter((e) => l.ids.includes(e.parcela.id)).reduce((a, e) => a + e.liquidaFluxo, 0);
+  return (
+    <article className="ft print-sheet hidden print:block">
+      <style>{CSS_FICHA}</style>
+      <header className="flex items-center justify-between gap-4 border-b-2 pb-2" style={{ borderColor: "#0f172a" }}>
+        <img src={logoRJ.url} alt="R&J Imóveis" className="h-14 w-auto" />
+        <div className="mono text-right text-[9px]">{nome}{creci ? <><br />{creci}</> : null}</div>
+      </header>
+      <h1 className="mt-3 text-center text-[14px] font-bold uppercase">Ficha de Proposta Imobiliária</h1>
+      <p className="text-center text-[10px]">Proposta <FM>{p.id}</FM> · Emitida em {dt(new Date().toISOString().slice(0, 10))}</p>
+
+      <h2>1 - Empreendimento e imóvel</h2>
+      <FT right={[5]} head={["Empreendimento", "Unidade", "Torre", "Vaga", "Status", "VGV"]}
+        rows={[[emp?.nome ?? "—", p.unidade || "—", p.torre || "—", p.vaga || "—", p.status, <FM>{brl(p.vgv)}</FM>]]} />
+
+      <h2>2 - Compradores</h2>
+      {p.compradores.map((c, i) => (
+        <div key={i} className="info-card">
+          <b>{i + 1}.º TITULAR:</b> {c.nome || "—"}{c.nacionalidade ? `, ${c.nacionalidade}` : ""}{c.estadoCivil ? `, ${c.estadoCivil}` : ""}{c.profissao ? `, ${c.profissao}` : ""}{c.nascimento ? `, nascido(a) em ${dt(c.nascimento)}` : ""}, CPF <FM>{c.cpf || "—"}</FM>, RG <FM>{c.rg || "—"}</FM>{c.conjuge ? `, cônjuge ${c.conjuge}` : ""}, endereço {c.endereco || "—"}, telefone <FM>{c.telefone || "—"}</FM>, e-mail {c.email || "—"}.
+        </div>
+      ))}
+
+      <h2>3 - Condições de pagamento</h2>
+      <FT right={[0, 2, 5]} head={["Qtd", "Tipo de parcela", "Valor unitário", "1.º vencimento", "Último vencimento", "Total da parcela"]}
+        rows={ls.map((l) => [<FM>{l.quantidade}</FM>, l.tipo, <FM>{brl(l.valor)}</FM>, <FM>{dt(l.vencimento)}</FM>, <FM>{dt(vencimentoParcela(l.vencimento, l.tipo, l.quantidade - 1))}</FM>, <FM>{brl(totalLinha(l))}</FM>])}
+        foot={["", "Preço do imóvel", "", "", "", <FM>{brl(preco)}</FM>]} />
+
+      <h2>4 - Valor líquido do imóvel</h2>
+      <FT right={[0, 2, 4, 5]} head={["Qtd", "Tipo de parcela", "Valor unitário", "1.º vencimento", "(–) Comissão", "Total líquido"]}
+        rows={ls.map((l) => [<FM>{l.quantidade}</FM>, l.tipo, <FM>{brl(l.valor)}</FM>, <FM>{dt(l.vencimento)}</FM>, <FM>{brl(comPerUnit(l))}</FM>, <FM>{brl(liqGrupo(l))}</FM>])}
+        foot={["", "Comissão deduzida", "", "", <FM>{brl(comissaoDeduzida)}</FM>, <FM>{brl(totalLiquido)}</FM>]} />
+
+      <h2>5 - Participantes do rateio</h2>
+      <FT right={[2, 3]} head={["Nome", "Função / CRECI", "% sobre VGV", "Comissão"]}
+        rows={p.participantes.map((x) => { const m = s.membros.find((mm) => mm.id === x.membroId); const c = creciFicha(m?.creci); return [m?.nome ?? "—", `${m?.funcao ?? "—"}${c ? ` · ${c}` : ""}`, <FM>{pct(x.pct)}</FM>, <FM>{brl(res.tetos[x.membroId] ?? 0)}</FM>]; })}
+        foot={["Total", "", <FM>{pct(p.participantes.reduce((a, b) => a + b.pct, 0))}</FM>, <FM>{brl(res.totalComissao)}</FM>]} />
+
+      <h2>6 - Validação do VGV</h2>
+      <FT right={[1]} head={["Descrição", "Valor"]} rows={[
+        ["VGV", <FM>{brl(p.vgv)}</FM>],
+        ["Soma das parcelas", <FM>{brl(preco)}</FM>],
+        ["Cobertura", <FM>{pct(p.vgv ? (preco / p.vgv) * 100 : 0)}</FM>],
+        ["Diferença", <FM>{brl(p.vgv - preco)}</FM>],
+      ]} />
+
+      <footer className="mt-6 border-t pt-2 text-center">
+        <img src={logoRJ.url} alt="" className="mx-auto h-10 w-auto" />
+        <p className="mono text-[9px]">{nome}{creci ? ` · ${creci}` : ""}</p>
+      </footer>
+    </article>
+  );
+}
