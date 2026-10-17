@@ -20,3 +20,4 @@
 - Installment type names combine immutable built-ins with Cloud catalog rows; authenticated members read the catalog and only admins insert through RLS. Names are append-only to preserve historical proposal and retention keys.
 - Proposal documents use private Storage objects keyed by proposal ID and a separate metadata table with matching proposal access policies; files never use public URLs so buyer documents remain private.
 - Save proposals before uploading their pending documents, and await persistence before reporting success; original extraction uploads are archived even when extraction fails.
+- Bulk team imports parse Excel in the browser, validate and preview rows before adding members through the existing store, and await Cloud persistence; they never create auth accounts or overwrite existing members.

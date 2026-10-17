@@ -5,6 +5,7 @@ import { Btn, Card, Field, Input, Mono, PageHeader, Pill, Select, Td, Th } from 
 import { setState, useStore, type Funcao, type Membro } from "@/lib/store";
 import { uid } from "@/lib/format";
 import { meta } from "@/lib/helpers";
+import { ImportarMembros } from "@/components/ImportarMembros";
 
 export const Route = createFileRoute("/_authenticated/equipe")({
   head: () => meta("Equipe e Cargos", "Cadastro de corretores, gerentes e gestores."),
@@ -14,12 +15,14 @@ const FUNCOES: Funcao[] = ["Corretor", "Gerente", "Diretor Comercial", "Jurídic
 
 function Equipe() {
   const list = useStore((s) => s.membros);
+  const papel = useStore((s) => s.eu?.papel);
   const [m, setM] = useState<Membro | null>(null);
   const save = () => { if (!m) return; setState((s) => ({ ...s, membros: s.membros.some((x) => x.id === m.id) ? s.membros.map((x) => (x.id === m.id ? m : x)) : [...s.membros, m] })); setM(null); };
   const f = (k: keyof Membro, label: string, mono = false) => m && <Field label={label}><Input className={mono ? "font-mono" : ""} value={(m[k] ?? "") as string} onChange={(e) => setM({ ...m, [k]: e.target.value })} /></Field>;
   return (
     <div>
       <PageHeader title="Equipe e Cargos" actions={<Btn onClick={() => setM({ id: uid(), nome: "", apelido: "", doc: "", creci: "", telefone: "", email: "", funcao: "Corretor" })}><Plus className="h-4 w-4" />Novo membro</Btn>} />
+      {(papel === "Admin" || papel === "Gerente") && <ImportarMembros />}
       {m && (
         <Card className="mb-6" title="Membro">
           <div className="grid gap-4 sm:grid-cols-3">{f("nome", "Nome")}{f("apelido", "Apelido")}{f("doc", "CPF/CNPJ", true)}{f("creci", "CRECI", true)}{f("telefone", "Telefone", true)}{f("email", "E-mail")}

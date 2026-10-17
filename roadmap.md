@@ -5,3 +5,5 @@
 - [x] Guardar documentos privados vinculados a cada proposta na nuvem.
 - [x] Permitir adicionar, consultar, baixar e excluir documentos na ficha, preservando os documentos da extração.
 - [x] Testar envio, reabertura, isolamento entre propostas e exclusão.
+- [x] Disponibilizar planilha modelo e importação em massa de membros com revisão.
+- [x] Testar validação e persistência da importação de equipe.
