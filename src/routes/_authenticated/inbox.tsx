@@ -35,7 +35,7 @@ function InboxPage() {
   const setStatus = (id: string, st: Status) => setState((x) => ({ ...x, propostas: x.propostas.map((p) => (p.id === id ? { ...p, status: st } : p)) }));
   return (
     <div>
-      <PageHeader title="Inbox de Propostas" subtitle={`${s.propostas.length} propostas salvas`} actions={<Link to="/proposta" search={{ id: undefined }}><Btn>Nova proposta</Btn></Link>} />
+      <PageHeader title="Inbox de Propostas" subtitle={`${s.propostas.length} propostas salvas`} actions={<Link to="/proposta" search={{ id: undefined, imprimir: false }}><Btn>Nova proposta</Btn></Link>} />
       <Card>
         <div className="mb-4 flex flex-wrap gap-2">
           <Input placeholder="Buscar por comprador, CPF, unidade, empreendimento..." value={q} onChange={(e) => setQ(e.target.value)} className="max-w-md" />
@@ -50,7 +50,7 @@ function InboxPage() {
               <Td><Select value={p.status} onChange={(e) => setStatus(p.id, e.target.value as Status)} className="w-36 py-1 text-xs">{["Em Análise", "Aprovada", "Escriturada"].map((x) => <option key={x}>{x}</option>)}</Select></Td>
               <Td className="whitespace-nowrap">
                 <Btn variant="ghost" onClick={() => setView(p.id)} aria-label="Visualizar"><Eye className="h-4 w-4" /></Btn>
-                <Link to="/proposta" search={{ id: p.id }}><Btn variant="ghost" aria-label="Editar"><Pencil className="h-4 w-4" /></Btn></Link>
+                <Link to="/proposta" search={{ id: p.id, imprimir: false }}><Btn variant="ghost" aria-label="Editar"><Pencil className="h-4 w-4" /></Btn></Link>
                 <Link to="/proposta" search={{ id: p.id, imprimir: true }}>
                   <Btn variant="ghost" aria-label="Imprimir proposta" title="Imprimir ficha da proposta"><FileText className="h-4 w-4" /></Btn>
                 </Link>
