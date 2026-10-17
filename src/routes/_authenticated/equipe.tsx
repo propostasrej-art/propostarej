@@ -30,8 +30,9 @@ function Equipe() {
           <div className="mt-4 flex gap-2"><Btn onClick={save}>Salvar</Btn><Btn variant="outline" onClick={() => setM(null)}>Cancelar</Btn></div>
         </Card>
       )}
-      <Card><div className="overflow-x-auto"><table className="w-full"><thead><tr><Th>Nome</Th><Th>Apelido</Th><Th>CPF/CNPJ</Th><Th>CRECI</Th><Th>Telefone</Th><Th>E-mail</Th><Th>Função</Th><Th /></tr></thead><tbody>
+      <Card><div className="overflow-x-auto"><table className="w-full"><thead><tr><Th>Nome</Th><Th>Apelido</Th><Th>CPF/CNPJ</Th><Th>CRECI</Th><Th>Telefone</Th><Th>E-mail</Th><Th>Função</Th><Th>Gerente</Th><Th>Diretor</Th><Th /></tr></thead><tbody>
         {list.map((x) => (<tr key={x.id}><Td className="font-medium">{x.nome}</Td><Td>{x.apelido}</Td><Td><Mono>{x.doc}</Mono></Td><Td><Mono>{x.creci}</Mono></Td><Td><Mono>{x.telefone}</Mono></Td><Td>{x.email}</Td><Td><Pill>{x.funcao}</Pill></Td>
+          <Td>{x.funcao === "Gerente" ? <Pill tone="success">✓</Pill> : <span className="text-muted-foreground">—</span>}</Td><Td>{x.funcao === "Diretor Comercial" ? <Pill tone="success">✓</Pill> : <span className="text-muted-foreground">—</span>}</Td>
           <Td className="whitespace-nowrap"><Btn variant="ghost" onClick={() => setM({ ...x })}>Editar</Btn><Btn variant="danger" onClick={() => setState((s) => ({ ...s, membros: s.membros.filter((y) => y.id !== x.id) }))}><Trash2 className="h-4 w-4" /></Btn></Td></tr>))}
       </tbody></table></div></Card>
     </div>
