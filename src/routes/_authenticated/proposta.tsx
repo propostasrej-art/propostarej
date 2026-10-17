@@ -1,5 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2, Upload, Save, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Btn, Card, Field, Input, Mono, PageHeader, Select } from "@/components/kit";
@@ -66,6 +66,7 @@ function Ficha() {
   const [p, setP] = useState<Proposta>(vazia);
   const cache = useQueryClient();
   const [salvando, setSalvando] = useState(false);
+  const manterDocumentos = useRef(false);
   const [ocr, setOcr] = useState<string | null>(null);
   const extrair = useServerFn(extrairProposta);
   const [conf, setConf] = useState<Record<string, number>>({});
@@ -81,7 +82,7 @@ function Ficha() {
   const rotulos = atual?.rotulos ?? {};
   const marcar = (e: React.SyntheticEvent) => { const k = (e.target as HTMLElement).closest("[data-k]")?.getAttribute("data-k"); if (k) { setAtivo(k); if (origem[k]) setDocAtivo(origem[k]!); } };
   const pick = (k: string) => { setAtivo(k); const el = document.querySelector<HTMLElement>(`[data-k="${k}"]`); (el?.matches("input,select") ? el : el?.querySelector<HTMLElement>("input,select"))?.focus({ preventScroll: false }); };
-  useEffect(() => { const f = id && getState().propostas.find((x) => x.id === id); setP(f ? structuredClone(f) : vazia()); setConf({}); setDocs([]); setDocAtivo(null); setOrigem({}); setExtras([]); setAtivo(null); }, [id]);
+  useEffect(() => { if (manterDocumentos.current) { manterDocumentos.current = false; return; } const f = id && getState().propostas.find((x) => x.id === id); setP(f ? structuredClone(f) : vazia()); setConf({}); setDocs([]); setDocAtivo(null); setOrigem({}); setExtras([]); setAtivo(null); }, [id]);
   const revisar = (k: string) => setConf((c) => { if (!(k in c)) return c; const n = { ...c }; delete n[k]; return n; });
   const rc = (k: string) => (precisaRevisao(conf[k]) ? (nivel(conf[k]!) === "baixa" ? "border-destructive bg-destructive/5 ring-2 ring-destructive/20" : "border-warn bg-warn/10 ring-2 ring-warn/25") : "");
   const L = (label: string, k: string) => {
@@ -122,6 +123,8 @@ function Ficha() {
   }
   async function onFile(f0: File | undefined, tipo: string, slot: string) {
     if (!f0) return;
+    const erroArquivo = validarDocumento(f0);
+    if (erroArquivo) { toast.error(erroArquivo); return; }
     if (f0.size === 0) { toast.error("Arquivo vazio ou corrompido."); return; }
     const mime = tipoDe(f0);
     if (!ACEITOS.includes(mime)) { toast.error("Formato não suportado. Use PDF, JPG, PNG, WEBP, GIF ou TXT."); return; }
@@ -280,7 +283,7 @@ function Ficha() {
           <Card title="Documentos para extração" action={<Btn variant="ghost" onClick={() => setExtras((e) => [...e, uid()])}><Plus className="h-4 w-4" />Adicionar documento</Btn>}>
             <div className="space-y-2">
               {slots.map(({ slot, tipo, extra }) => {
-                const d = docs.findLast((x) => x.slot === slot);
+                const d = [...docs].reverse().find((x) => x.slot === slot);
                 const lendo = ocr === slot;
                 return (
                   <div key={slot} onDragOver={(e) => { e.preventDefault(); setSobre(slot); }} onDragLeave={() => setSobre((x) => (x === slot ? null : x))}
