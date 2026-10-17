@@ -21,6 +21,25 @@ function TiposParcela() {
   const [nome, setNome] = useState("");
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+  const [editando, setEditando] = useState<{ id: string; nome: string } | null>(null);
+  async function salvarEdicao() {
+    if (!editando || salvando) return;
+    const invalido = validarNomeTipo(editando.nome, tipos.filter((t) => t.id !== editando.id));
+    if (invalido) { setErro(invalido); return; }
+    setSalvando(true); setErro(null);
+    try {
+      const { error } = await supabase.from("tipos_parcela").update({ nome: editando.nome.trim() }).eq("id", editando.id);
+      if (error) { setErro(error.code === "23505" ? "Este tipo de parcela já existe." : "Não foi possível salvar a alteração."); return; }
+      await carregar(); setEditando(null); toast.success("Tipo de parcela atualizado");
+    } catch { setErro("Não foi possível salvar a alteração."); }
+    finally { setSalvando(false); }
+  }
+  async function excluir(id: string, nomeTipo: string) {
+    if (!window.confirm(`Excluir o tipo de parcela "${nomeTipo}"? Parcelas já lançadas com esse nome serão mantidas.`)) return;
+    const { error } = await supabase.from("tipos_parcela").delete().eq("id", id);
+    if (error) { toast.error("Não foi possível excluir o tipo de parcela."); return; }
+    await carregar(); toast.success("Tipo de parcela excluído");
+  }
   async function salvar(e: React.FormEvent) {
     e.preventDefault();
     if (salvando) return;
