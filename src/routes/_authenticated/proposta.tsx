@@ -244,9 +244,30 @@ function Ficha() {
       const np = pendentes(nc).length;
       if (np) toast.warning(`${tipo}: dados extraídos de "${f.name}". ${np} campo(s) precisam de revisão.`);
       else toast.success(`${tipo}: dados extraídos de "${f.name}".`);
+      return true;
     } catch {
       toast.error("Não foi possível processar o arquivo.");
+      return false;
     } finally { setOcr(null); }
+  }
+  // Reextrai os dados de todos os documentos do banco (salvos e pendentes) para preencher a ficha.
+  async function extrairBanco() {
+    if (!id) { toast.warning("Salve a proposta para usar os documentos do banco."); return; }
+    setExtraindo(true);
+    try {
+      const salvos = await listarDocumentos(p.id);
+      const pendentesDocs = docs.filter((d) => !d.salvo && !salvos.some((x) => x.id === d.id));
+      const itens: { id: string; tipo: string; file: File }[] = [];
+      for (const d of [...salvos].reverse()) {
+        try { const l = await abrirDocumento(d); itens.push({ id: d.id, tipo: d.tipo, file: l.file }); }
+        catch { toast.error(`Não foi possível abrir "${d.nome}".`); }
+      }
+      for (const d of pendentesDocs) itens.push({ id: d.id, tipo: d.tipo, file: d.file });
+      if (!itens.length) { toast.info("Nenhum documento no banco desta proposta."); return; }
+      let okN = 0;
+      for (const it of itens) if (await extrairArquivo(it.id, it.file, it.tipo)) okN++;
+      toast.success(`Extração concluída: ${okN} de ${itens.length} documento(s) processados.`);
+    } finally { setExtraindo(false); }
   }
   const slots = [...SLOTS_FIXOS.map((t) => ({ slot: t, tipo: t, extra: false })), ...extras.map((e, i) => ({ slot: e, tipo: `Documento adicional ${i + 1}`, extra: true }))];
   const removerDoc = (docId: string) => {
