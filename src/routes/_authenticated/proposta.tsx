@@ -255,7 +255,7 @@ function Ficha() {
             destaque={(ids) => ids.some((id) => { const c = conf[`p:${id}`]; return c !== undefined && nivel(c) === "baixa" && precisaRevisao(c); }) ? "bg-destructive/5" : ids.some((id) => precisaRevisao(conf[`p:${id}`])) ? "bg-warn/10" : ""} />
           {(() => { const { res } = rateioDaProposta(s, p); const totalLiquido = res.eventos.reduce((a, e) => a + e.liquidaFluxo, 0);
             return (
-              <Card title="Tabela de valor líquido do imóvel" subtitle="Parcela menos a comissão deduzida em cada vencimento">
+              <Card title="Tabela de valor líquido do imóvel">
                 <div className="overflow-x-auto"><table className="w-full min-w-[560px]"><thead><tr>
                   <Th>Vencimento</Th><Th>Tipo de parcela</Th><Th>Valor da parcela</Th><Th>(–) Comissão</Th><Th>Valor líquido</Th>
                 </tr></thead><tbody>
