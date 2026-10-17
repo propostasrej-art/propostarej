@@ -263,7 +263,7 @@ function Ficha() {
                   {agruparParcelas(p.parcelas).map((l) => {
                     const evs = res.eventos.filter((e) => l.ids.includes(e.parcela.id));
                     const pools = evs.map((e) => e.pool);
-                    const uniforme = pools.every((x) => Math.abs(x - pools[0]) < 0.005);
+                    const uniforme = pools.length > 0 && pools.every((x) => Math.abs(x - (pools[0] ?? 0)) < 0.005);
                     const protegida = evs.length > 0 && evs.every((e) => e.pool === 0);
                     return (
                       <tr key={l.id} className={protegida ? "bg-muted/50" : ""}>
