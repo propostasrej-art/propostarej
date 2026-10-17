@@ -22,7 +22,7 @@ async function renderizar(file: File): Promise<Pagina[]> {
     const vp = page.getViewport({ scale: 2 });
     const canvas = document.createElement("canvas");
     canvas.width = vp.width; canvas.height = vp.height;
-    await page.render({ canvas, canvasContext: canvas.getContext("2d")!, viewport: vp }).promise;
+    await page.render({ canvas, viewport: vp }).promise;
     out.push({ src: canvas.toDataURL("image/png"), w: vp.width, h: vp.height });
   }
   return out;
@@ -62,7 +62,8 @@ export function DocViewer({ file, trechos, ativo, onPick, rotulos }: {
         }
         await w.terminate();
         if (vivo) { setPalavras(all); setStatus(""); }
-      } catch {
+      } catch (e) {
+        console.error("DocViewer render falhou:", e);
         if (vivo) setStatus("Não foi possível localizar os trechos neste documento.");
       }
     })();
