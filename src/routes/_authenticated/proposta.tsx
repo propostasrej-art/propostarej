@@ -172,7 +172,12 @@ function Ficha() {
     const docId = uid();
     // Archive the original upload even when AI extraction fails.
     setDocs((ds) => [...ds, { id: docId, slot, tipo, file: f0, trechos: {}, rotulos: {} }]);
-    setOcr(slot);
+    await extrairArquivo(docId, f, tipo);
+  }
+  // Extrai os dados de um arquivo (recém-enviado ou já guardado no banco de documentos) e preenche a ficha.
+  async function extrairArquivo(docId: string, f: File, tipo: string): Promise<boolean> {
+    const mime = tipoDe(f);
+    setOcr(docId);
     try {
       const base64 = await new Promise<string>((ok, err) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] ?? ""); r.onerror = err; r.readAsDataURL(f); });
       const out = await extrair({ data: { filename: f.name, mime: mime.startsWith("image/") ? f.type : mime, base64, tipoDoc: tipo } });
