@@ -8,6 +8,7 @@ import { getState, setState, useStore, type Proposta, type Status } from "@/lib/
 import { nomesTiposParcela } from "@/lib/tipos-parcela";
 import { brl, dt, pct, uid } from "@/lib/format";
 import { meta, rateioDaProposta, somaParcelas } from "@/lib/helpers";
+import { agruparParcelas } from "@/lib/parcelas-tabela";
 import { useServerFn } from "@tanstack/react-start";
 import { extrairProposta } from "@/lib/extracao.functions";
 import { nivel, pendentes, precisaRevisao, LIMIAR_REVISAO } from "@/lib/confianca";
