@@ -382,7 +382,7 @@ function Ficha() {
           </Card>
         </div>
         <div className="space-y-6">
-          <BancoDocumentos propostaId={p.id} salva={s.propostas.some((x) => x.id === p.id)} locais={docs} disabled={salvando || !!ocr}
+          <BancoDocumentos propostaId={p.id} salva={s.propostas.some((x) => x.id === p.id)} locais={docs} disabled={salvando || !!ocr} extraindo={extraindo} onExtrair={extrairBanco}
             onAdd={(files, tipo) => {
               const novos: Doc[] = [];
               for (const file of files) {
