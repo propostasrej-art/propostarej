@@ -286,9 +286,9 @@ function Ficha() {
                   </div>
                   <div className="flex items-baseline justify-between gap-3 py-0.5">
                     <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Comissão deduzida</span>
-                    <Mono className="whitespace-nowrap text-right text-sm font-bold text-destructive">– {brl(comissaoDeduzida)}</Mono>
+                    <Mono className="whitespace-nowrap text-right text-sm font-bold text-destructive">{brl(comissaoDeduzida)}</Mono>
                   </div>
-                  <div className="mt-2 flex items-baseline justify-between gap-3 rounded-md bg-success/10 px-3 py-2">
+                  <div className="mt-2 -mx-3 flex items-baseline justify-between gap-3 rounded-md bg-success/10 px-3 py-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-success">Valor líquido</span>
                     <Mono className="whitespace-nowrap text-right text-base font-bold text-success">{brl(totalLiquido)}</Mono>
                   </div>
