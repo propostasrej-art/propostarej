@@ -398,7 +398,7 @@ function Ficha() {
             <div className="space-y-2">
               {slots.map(({ slot, tipo, extra }) => {
                 const d = [...docs].reverse().find((x) => x.slot === slot);
-                const lendo = ocr === slot;
+                const lendo = ocr === slot || (!!d && ocr === d.id);
                 return (
                   <div key={slot} onDragOver={(e) => { e.preventDefault(); setSobre(slot); }} onDragLeave={() => setSobre((x) => (x === slot ? null : x))}
                     onDrop={(e) => { e.preventDefault(); setSobre(null); if (!ocr) onFile(e.dataTransfer.files?.[0], extra ? "Documento adicional" : tipo, slot); }}
