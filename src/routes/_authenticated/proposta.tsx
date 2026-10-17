@@ -135,7 +135,7 @@ function Ficha() {
       toast.success("Proposta e documentos salvos.");
       // Avoid resetting the extracted field sources after the first save.
       if (id !== p.id) manterDocumentos.current = true;
-      await nav({ to: "/proposta", search: { id: p.id } });
+      await nav({ to: "/proposta", search: { id: p.id, imprimir: false } });
     } catch { toast.error("A proposta foi salva, mas alguns documentos não. Clique em Salvar para tentar novamente."); }
     finally { setSalvando(false); }
   }
@@ -231,7 +231,7 @@ function Ficha() {
     <div>
       <div className="print:hidden">
       <PageHeader title="Extração & Ficha da Proposta" subtitle={id ? `Editando proposta ${id}` : "Nova proposta"}
-        actions={<><Btn variant="outline" disabled={salvando || !!ocr} onClick={() => nav({ to: "/proposta", search: { id: undefined } })}>Nova</Btn><Btn disabled={salvando || !!ocr} onClick={salvar}><Save className="h-4 w-4" />{salvando ? "Salvando..." : "Salvar"}</Btn></>} />
+        actions={<><Btn variant="outline" disabled={salvando || !!ocr} onClick={() => nav({ to: "/proposta", search: { id: undefined, imprimir: false } })}>Nova</Btn><Btn disabled={salvando || !!ocr} onClick={salvar}><Save className="h-4 w-4" />{salvando ? "Salvando..." : "Salvar"}</Btn></>} />
       <div className={cn("grid gap-6", arquivo ? "xl:grid-cols-2" : "xl:grid-cols-3")}>
         <div className={cn("space-y-6", !arquivo && "xl:col-span-2", "[&_[data-k]]:scroll-mt-24")} onFocusCapture={marcar} onClickCapture={marcar}>
           <Card title="Empreendimento e unidade">
