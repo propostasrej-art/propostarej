@@ -54,7 +54,7 @@ function Contrato() {
   const [modalidade, setModalidade] = useState<Modalidade>("rateio");
   const p = s.propostas.find((x) => x.id === id) ?? s.propostas[0];
   if (!p) return <PageHeader title="Contrato" subtitle="Cadastre uma proposta primeiro." />;
-  const { emp, res } = rateioDaProposta(s, p);
+  const { emp, parts, res } = rateioDaProposta(s, p);
   const imob = s.membros.find((m) => m.funcao === "Imobiliária");
   const liquido = Math.round((p.vgv - res.totalComissao) * 100) / 100;
   const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -63,6 +63,7 @@ function Contrato() {
   const precoParc = res.eventos.map((e) => ({ ...e.parcela, valor: r2(e.liquidaFluxo) }));
   const comisParc = res.eventos.map((e) => ({ ...e.parcela, valor: r2(e.pool) }));
   const lPreco = linhasFluxo(precoParc), lComis = linhasFluxo(comisParc);
+  const cron = res.eventos.filter((e) => e.pool > 0);
 
   // Participantes com comissão ativa, agrupando papéis por pessoa (exclui a PJ imobiliária)
   const benef = new Map<string, { m: Membro; cargos: Set<string>; valor: number }>();
@@ -152,6 +153,14 @@ function Contrato() {
           <Tab right={[3]} head={["Apelido", "Nome", "Cargo", "Valor (R$)"]}
             rows={lista.map((b) => [b.m.apelido, b.m.nome, [...b.cargos].join(", "), <M>{brl(b.valor)}</M>])}
             foot={["", "Total (100%)", "", <M>{brl(totalBenef)}</M>]} />
+
+          <div className="mt-3 text-[10px] font-bold uppercase">Tabela 4 - Cronograma de rateio (evento a evento)</div>
+          <Tab right={[0, 2, 3, ...Array.from({ length: parts.length + 2 }, (_, i) => 4 + i)]}
+            head={["Vencimento", "Tipo", "Parcela", "Comissão", ...parts.map((x) => x.nome.split(" ")[0] ?? x.nome), "Acumulado", "Fluxo incorporador"]}
+            rows={cron.map((e) => [<M>{dt(e.parcela.vencimento)}</M>, e.parcela.tipo, <M>{brl(e.parcela.valor)}</M>, <M>{brl(e.pool)}</M>,
+              ...parts.map((x) => <M>{e.pagamentos[x.id] ? brl(e.pagamentos[x.id]) : "—"}</M>),
+              <M>{brl(e.acumuladoTotal)}</M>, <M>{brl(e.liquidaFluxo)}</M>])}
+            foot={["", "Total", "", <M>{brl(cron.reduce((a, e) => a + e.pool, 0))}</M>, ...parts.map((x) => <M>{brl(res.pagos[x.id] ?? 0)}</M>), "", ""]} />
 
           <h2>8 - Assinaturas e fechamento</h2>
           <p>_______________________ - ___, {dataExtenso}.</p>
