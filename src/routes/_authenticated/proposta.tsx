@@ -8,6 +8,7 @@ import { getState, setState, useStore, type Proposta, type Status } from "@/lib/
 import { nomesTiposParcela } from "@/lib/tipos-parcela";
 import { brl, dt, pct, uid } from "@/lib/format";
 import { meta, rateioDaProposta, somaParcelas } from "@/lib/helpers";
+import { agruparParcelas } from "@/lib/parcelas-tabela";
 import { useServerFn } from "@tanstack/react-start";
 import { extrairProposta } from "@/lib/extracao.functions";
 import { nivel, pendentes, precisaRevisao, LIMIAR_REVISAO } from "@/lib/confianca";
@@ -257,21 +258,28 @@ function Ficha() {
             return (
               <Card title="Tabela de valor líquido do imóvel">
                 <div className="overflow-x-auto"><table className="w-full min-w-[560px]"><thead><tr>
-                  <Th>Vencimento</Th><Th>Tipo de parcela</Th><Th>Valor da parcela</Th><Th>(–) Comissão</Th><Th>Valor líquido</Th>
+                  <Th>Quantidade</Th><Th>Tipo de parcela</Th><Th>Valor unitário</Th><Th>1.º vencimento</Th><Th>(–) Comissão</Th><Th>Total líquido</Th>
                 </tr></thead><tbody>
-                  {res.eventos.map((e) => (
-                    <tr key={e.parcela.id} className={e.pool > 0 ? "" : "bg-muted/50"}>
-                      <Td><Mono>{dt(e.parcela.vencimento)}</Mono></Td>
-                      <Td>{e.parcela.tipo}</Td>
-                      <Td><Mono>{brl(e.parcela.valor)}</Mono></Td>
-                      <Td><Mono className={e.pool > 0 ? "" : "text-muted-foreground"}>{e.pool > 0 ? brl(e.pool) : "—"}</Mono></Td>
-                      <Td><Mono className="whitespace-nowrap font-semibold text-success">{brl(e.liquidaFluxo)}</Mono></Td>
-                    </tr>
-                  ))}
-                  {!res.eventos.length && <tr><td colSpan={5} className="py-6 text-center text-sm text-muted-foreground">Nenhuma parcela cadastrada.</td></tr>}
+                  {agruparParcelas(p.parcelas).map((l) => {
+                    const evs = res.eventos.filter((e) => l.ids.includes(e.parcela.id));
+                    const pools = evs.map((e) => e.pool);
+                    const uniforme = pools.length > 0 && pools.every((x) => Math.abs(x - (pools[0] ?? 0)) < 0.005);
+                    const protegida = evs.length > 0 && evs.every((e) => e.pool === 0);
+                    return (
+                      <tr key={l.id} className={protegida ? "bg-muted/50" : ""}>
+                        <Td><Mono>{l.quantidade}</Mono></Td>
+                        <Td>{l.tipo}</Td>
+                        <Td><Mono>{brl(l.valor)}</Mono></Td>
+                        <Td><Mono>{dt(l.vencimento)}</Mono></Td>
+                        <Td><Mono className={protegida ? "text-muted-foreground" : ""}>{uniforme ? brl(pools[0]) : brl(pools.reduce((a, x) => a + x, 0))}</Mono></Td>
+                        <Td><Mono className="whitespace-nowrap font-semibold text-success">{brl(evs.reduce((a, e) => a + e.liquidaFluxo, 0))}</Mono></Td>
+                      </tr>
+                    );
+                  })}
+                  {!res.eventos.length && <tr><td colSpan={6} className="py-6 text-center text-sm text-muted-foreground">Nenhuma parcela cadastrada.</td></tr>}
                 </tbody><tfoot><tr>
-                  <td colSpan={2} className="px-3 pt-4 text-right text-sm font-semibold">Total</td>
-                  <td className="px-3 pt-4"><Mono className="whitespace-nowrap font-semibold">{brl(somaParcelas(p))}</Mono></td>
+                  <td colSpan={4} className="px-3 pt-4 text-right text-sm font-semibold">Total</td>
+                  <td className="px-3 pt-4"><Mono className="whitespace-nowrap font-semibold">{brl(res.eventos.reduce((a, e) => a + e.pool, 0))}</Mono></td>
                   <td className="px-3 pt-4"><Mono className="whitespace-nowrap font-semibold">{brl(res.eventos.reduce((a, e) => a + e.pool, 0))}</Mono></td>
                   <td className="px-3 pt-4"><Mono className="whitespace-nowrap font-semibold text-success">{brl(totalLiquido)}</Mono></td>
                 </tr></tfoot></table></div>
