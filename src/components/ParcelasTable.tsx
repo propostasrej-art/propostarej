@@ -46,8 +46,8 @@ export function ParcelasTable({ parcelas, onChange, revisar, indicador, destaque
           <Td><Select aria-label={`Tipo de parcela ${indice + 1}`} className="min-w-44" value={linha.tipo} onChange={(e) => alterar({ tipo: e.target.value as TipoParcela })}>{tipos.map((tipo) => <option key={tipo}>{tipo}</option>)}</Select></Td>
           <Td><Input aria-label={`Valor Unitário ${indice + 1}`} type="number" min="0" step="0.01" className="min-w-32 font-mono" value={linha.valor || ""} onChange={(e) => alterar({ valor: Math.max(0, Number(e.target.value)) })} /></Td>
           <Td><Input aria-label={`1.º vencimento ${indice + 1}`} type="date" className="min-w-36 font-mono" value={linha.vencimento} onChange={(e) => alterar({ vencimento: e.target.value })} /></Td>
-          <Td><Mono className="whitespace-nowrap font-semibold text-success">{brl(totalLinha(linha))}</Mono><div className="mt-1 flex flex-wrap gap-1">{linha.ids.map((id) => <span key={id} data-k={`p:${id}`}>{indicador(id)}</span>)}</div></Td>
-          <Td><Btn variant="danger" aria-label={`Excluir parcela ${indice + 1}`} title="Excluir parcela" onClick={() => { linha.ids.forEach(revisar); atualizar(linhas.filter((_, i) => i !== indice)); }}><Trash2 className="h-4 w-4" /></Btn></Td>
+          <Td><Mono className="whitespace-nowrap font-semibold text-success">{brl(totalLinha(linha))}</Mono></Td>
+          <Td><div className="flex items-center gap-1">{linha.ids.map((id) => <span key={id} data-k={`p:${id}`}>{indicador(id)}</span>)}<Btn variant="danger" aria-label={`Excluir parcela ${indice + 1}`} title="Excluir parcela" onClick={() => { linha.ids.forEach(revisar); atualizar(linhas.filter((_, i) => i !== indice)); }}><Trash2 className="h-4 w-4" /></Btn></div></Td>
         </tr>;
       })}
       {!linhas.length && <tr><td colSpan={6} className="py-6 text-center text-sm text-muted-foreground">Nenhuma parcela cadastrada.</td></tr>}
