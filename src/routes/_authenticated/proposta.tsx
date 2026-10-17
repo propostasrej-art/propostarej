@@ -2,12 +2,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { Plus, Trash2, Upload, Save, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
-import { Btn, Card, Field, Input, Mono, PageHeader, Select } from "@/components/kit";
+import { Btn, Card, Field, Input, Mono, PageHeader, Select, Td, Th } from "@/components/kit";
 import { ParcelasTable } from "@/components/ParcelasTable";
 import { getState, setState, useStore, type Proposta, type Status } from "@/lib/store";
 import { nomesTiposParcela } from "@/lib/tipos-parcela";
 import { brl, pct, uid } from "@/lib/format";
-import { meta, somaParcelas } from "@/lib/helpers";
+import { meta, rateioDaProposta, somaParcelas } from "@/lib/helpers";
 import { useServerFn } from "@tanstack/react-start";
 import { extrairProposta } from "@/lib/extracao.functions";
 import { nivel, pendentes, precisaRevisao, LIMIAR_REVISAO } from "@/lib/confianca";
@@ -253,6 +253,31 @@ function Ficha() {
           <ParcelasTable key={p.id} parcelas={p.parcelas} onChange={(parcelas) => up({ parcelas })}
             revisar={(id) => revisar(`p:${id}`)} indicador={(id) => conf[`p:${id}`] === undefined ? null : L("", `p:${id}`)}
             destaque={(ids) => ids.some((id) => { const c = conf[`p:${id}`]; return c !== undefined && nivel(c) === "baixa" && precisaRevisao(c); }) ? "bg-destructive/5" : ids.some((id) => precisaRevisao(conf[`p:${id}`])) ? "bg-warn/10" : ""} />
+          {(() => { const { res } = rateioDaProposta(s, p); const totalLiquido = res.eventos.reduce((a, e) => a + e.liquidaFluxo, 0);
+            return (
+              <Card title="Tabela de valor líquido do imóvel" subtitle="Parcela menos a comissão deduzida em cada vencimento">
+                <div className="overflow-x-auto"><table className="w-full min-w-[560px]"><thead><tr>
+                  <Th>Vencimento</Th><Th>Tipo de parcela</Th><Th>Valor da parcela</Th><Th>(–) Comissão</Th><Th>Valor líquido</Th>
+                </tr></thead><tbody>
+                  {res.eventos.map((e) => (
+                    <tr key={e.parcela.id} className={e.pool > 0 ? "" : "bg-muted/50"}>
+                      <Td><Mono>{dt(e.parcela.vencimento)}</Mono></Td>
+                      <Td>{e.parcela.tipo}</Td>
+                      <Td><Mono>{brl(e.parcela.valor)}</Mono></Td>
+                      <Td><Mono className={e.pool > 0 ? "" : "text-muted-foreground"}>{e.pool > 0 ? brl(e.pool) : "—"}</Mono></Td>
+                      <Td><Mono className="whitespace-nowrap font-semibold text-success">{brl(e.liquidaFluxo)}</Mono></Td>
+                    </tr>
+                  ))}
+                  {!res.eventos.length && <tr><td colSpan={5} className="py-6 text-center text-sm text-muted-foreground">Nenhuma parcela cadastrada.</td></tr>}
+                </tbody><tfoot><tr>
+                  <td colSpan={2} className="px-3 pt-4 text-right text-sm font-semibold">Total</td>
+                  <td className="px-3 pt-4"><Mono className="whitespace-nowrap font-semibold">{brl(somaParcelas(p))}</Mono></td>
+                  <td className="px-3 pt-4"><Mono className="whitespace-nowrap font-semibold">{brl(res.eventos.reduce((a, e) => a + e.pool, 0))}</Mono></td>
+                  <td className="px-3 pt-4"><Mono className="whitespace-nowrap font-semibold text-success">{brl(totalLiquido)}</Mono></td>
+                </tr></tfoot></table></div>
+                <p className="mt-3 text-xs text-muted-foreground">Parcelas protegidas (Financiamento Bancário, FGTS, Subsídio) não deduzem comissão; o líquido delas é o valor integral.</p>
+              </Card>
+            ); })()}
           <Card title="Participantes do rateio (% sobre VGV)" action={<Btn variant="ghost" onClick={() => up({ participantes: [...p.participantes, { membroId: s.membros[0]?.id ?? "", pct: 1 }] })}><Plus className="h-4 w-4" />Participante</Btn>}>
             <div className="space-y-2">
               {p.participantes.map((x, i) => (
