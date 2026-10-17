@@ -201,7 +201,7 @@ function Ficha() {
       }
       // Casa cada comprador extraído com um existente (CPF ou nome), senão usa o 1º vazio / novo
       const dig = (v: string) => v.replace(/\D/g, "");
-      const compr = p.compradores.map((c) => ({ ...c }));
+      const compr = pRef.current.compradores.map((c) => ({ ...c }));
       d.compradores.forEach((c, n) => {
         let i = compr.findIndex((x) => (dig(c.cpf) && dig(x.cpf) === dig(c.cpf)) || (c.nome && x.nome.trim().toLowerCase() === c.nome.trim().toLowerCase()));
         if (i < 0) i = !isProp && n === 0 ? 0 : compr.findIndex((x) => !x.nome && !x.cpf);
