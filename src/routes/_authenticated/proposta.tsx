@@ -448,7 +448,7 @@ const Cel = ({ l, v, mono, span }: { l: string; v?: ReactNode; mono?: boolean; s
   <div style={span ? { gridColumn: `span ${span}` } : undefined}><span className="lb">{l}</span>{v ? (mono ? <FM>{v}</FM> : v) : "\u00a0"}</div>
 );
 
-function Titular({ titulo, c }: { titulo: string; c?: Proposta["compradores"][number] }) {
+function Titular({ titulo, c }: { titulo: string; c?: Proposta["compradores"][number] | undefined }) {
   return <section><h3>{titulo}</h3><div className="grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
     <Cel span={2} l="Nome completo" v={c?.nome} />
     <Cel l="CPF" v={c?.cpf} mono /><Cel l="Telefone" v={c?.telefone} mono />
