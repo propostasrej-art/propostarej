@@ -102,9 +102,12 @@ function Contrato() {
         </div>} />
       <div className="overflow-x-auto">
         <article className="ct a4-sheet print-sheet mx-auto border bg-card text-[11px] leading-relaxed shadow-lg">
-          <header className="flex items-center justify-between border-b-2 pb-2" style={{ borderColor: "#0f172a" }}>
-            <div className="text-lg font-black tracking-tight">R&amp;J <span className="font-normal">Imóveis</span></div>
-            <div className="mono text-[9px]">{imob?.creci}</div>
+          <header className="flex items-center justify-between gap-4 border-b-2 pb-2" style={{ borderColor: "#0f172a" }}>
+            <img src={logoRJ.url} alt="R&J Imóveis" className="h-16 w-auto" />
+            <div className="mono text-right text-[9px]">
+              {imob?.nome ?? "R&J Imóveis"}
+              {imob?.creci ? <><br />CRECI {imob.creci}</> : null}
+            </div>
           </header>
           <h1 className="mt-3 text-center text-[14px] font-bold uppercase">Contrato de Prestação de Serviços de Corretagem Imobiliária</h1>
           <p className="!mt-0 !text-center text-[11px]">{modalidade === "rateio" ? "Intermediação Imobiliária com Rateio de Honorários" : "Intermediação Imobiliária com Repasse Construtora / NF"}</p>
