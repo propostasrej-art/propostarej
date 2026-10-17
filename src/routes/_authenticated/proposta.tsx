@@ -1,14 +1,14 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Plus, Trash2, Upload, Save, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Btn, Card, Field, Input, Mono, PageHeader, Select, Td, Th } from "@/components/kit";
 import { ParcelasTable } from "@/components/ParcelasTable";
-import { getState, setState, useStore, type Proposta, type Status } from "@/lib/store";
+import { getState, setState, useStore, type Proposta, type State, type Status } from "@/lib/store";
 import { nomesTiposParcela } from "@/lib/tipos-parcela";
 import { brl, dt, pct, uid } from "@/lib/format";
 import { meta, rateioDaProposta, somaParcelas } from "@/lib/helpers";
-import { agruparParcelas } from "@/lib/parcelas-tabela";
+import { agruparParcelas, totalLinha, vencimentoParcela } from "@/lib/parcelas-tabela";
 import { useServerFn } from "@tanstack/react-start";
 import { extrairProposta } from "@/lib/extracao.functions";
 import { nivel, pendentes, precisaRevisao, LIMIAR_REVISAO } from "@/lib/confianca";
@@ -19,6 +19,7 @@ import { BancoDocumentos } from "@/components/BancoDocumentos";
 import { chaveDocumentos, guardarDocumento, listarDocumentos, type DocumentoLocal } from "@/lib/documentos";
 import { validarDocumento } from "@/lib/documentos-regras";
 import { useQueryClient } from "@tanstack/react-query";
+import logoRJ from "@/assets/logorj.png.asset.json";
 
 type Doc = DocumentoLocal;
 const SLOTS_FIXOS = ["Documento de identidade (RG/CNH)", "CPF", "Comprovante de residência", "Comprovante de estado civil", "Proposta"];
@@ -50,7 +51,12 @@ async function otimizarImagem(f: File): Promise<File> {
 }
 
 export const Route = createFileRoute("/_authenticated/proposta")({
-  validateSearch: (s: Record<string, unknown>) => ({ id: typeof s["id"] === "string" ? (s["id"] as string) : undefined }),
+  // A ficha pode ser aberta do Inbox já com a proposta escolhida e, opcionalmente,
+  // com a janela de impressão aberta sozinha.
+  validateSearch: (s: Record<string, unknown>) => ({
+    id: typeof s["id"] === "string" && s["id"] ? (s["id"] as string) : undefined,
+    imprimir: s["imprimir"] === true || s["imprimir"] === "true" || s["imprimir"] === "1",
+  }),
   head: () => meta("Ficha da Proposta", "Cadastro e extração de dados de propostas imobiliárias."),
   component: Ficha,
 });
@@ -61,7 +67,7 @@ const vazia = (): Proposta => ({
 });
 
 function Ficha() {
-  const { id } = Route.useSearch();
+  const { id, imprimir } = Route.useSearch();
   const nav = useNavigate();
   const s = useStore((x) => x);
   const [p, setP] = useState<Proposta>(vazia);
