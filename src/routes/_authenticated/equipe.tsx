@@ -19,7 +19,7 @@ function Equipe() {
   const f = (k: keyof Membro, label: string, mono = false) => m && <Field label={label}><Input className={mono ? "font-mono" : ""} value={m[k]} onChange={(e) => setM({ ...m, [k]: e.target.value })} /></Field>;
   return (
     <div>
-      <PageHeader title="Equipe e Cargos" actions={<Btn onClick={() => setM({ id: uid(), nome: "", apelido: "", doc: "", creci: "", telefone: "", funcao: "Corretor" })}><Plus className="h-4 w-4" />Novo membro</Btn>} />
+      <PageHeader title="Equipe e Cargos" actions={<Btn onClick={() => setM({ id: uid(), nome: "", apelido: "", doc: "", creci: "", telefone: "", email: "", funcao: "Corretor" })}><Plus className="h-4 w-4" />Novo membro</Btn>} />
       {m && (
         <Card className="mb-6" title="Membro">
           <div className="grid gap-4 sm:grid-cols-3">{f("nome", "Nome")}{f("apelido", "Apelido")}{f("doc", "CPF/CNPJ", true)}{f("creci", "CRECI", true)}{f("telefone", "Telefone", true)}
