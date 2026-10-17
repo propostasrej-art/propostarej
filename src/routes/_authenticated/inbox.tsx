@@ -1,6 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { Pencil, Eye, Trash2 } from "lucide-react";
+import { Pencil, Eye, Trash2, Printer } from "lucide-react";
 import { Btn, Card, Input, Mono, PageHeader, Pill, Select, Td, Th, statusTone } from "@/components/kit";
 import { setState, useStore, type Status } from "@/lib/store";
 import { brl, dt } from "@/lib/format";
@@ -51,6 +51,9 @@ function InboxPage() {
               <Td className="whitespace-nowrap">
                 <Btn variant="ghost" onClick={() => setView(p.id)} aria-label="Visualizar"><Eye className="h-4 w-4" /></Btn>
                 <Link to="/proposta" search={{ id: p.id }}><Btn variant="ghost" aria-label="Editar"><Pencil className="h-4 w-4" /></Btn></Link>
+                <Link to="/contrato" search={{ id: p.id, imprimir: true }} aria-label="Imprimir contrato">
+                  <Btn variant="ghost" aria-label="Imprimir contrato" title="Imprimir contrato de corretagem"><Printer className="h-4 w-4" /></Btn>
+                </Link>
                 <Btn variant="danger" aria-label="Excluir" disabled={!!excluindo} onClick={() => excluir(p.id)}><Trash2 className="h-4 w-4" /></Btn>
               </Td>
             </tr>

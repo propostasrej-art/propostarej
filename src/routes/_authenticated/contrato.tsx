@@ -1,5 +1,5 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState, type ReactNode } from "react";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Printer, FileDown, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Btn, PageHeader, Select } from "@/components/kit";
@@ -12,6 +12,12 @@ import { meta, rateioDaProposta } from "@/lib/helpers";
 import logoRJ from "@/assets/logorj.png.asset.json";
 
 export const Route = createFileRoute("/_authenticated/contrato")({
+  // A ficha pode ser aberta de outro lugar (Inbox) já com a proposta escolhida e,
+  // opcionalmente, com a janela de impressão aberta sozinha.
+  validateSearch: (s: Record<string, unknown>) => ({
+    id: typeof s["id"] === "string" && s["id"] ? s["id"] : undefined,
+    imprimir: s["imprimir"] === true || s["imprimir"] === "true" || s["imprimir"] === "1",
+  }),
   head: () => meta("Contrato de Corretagem", "Contrato de Prestação de Serviços de Corretagem Imobiliária com Rateio de Honorários em A4."),
   component: Contrato,
 });
@@ -55,9 +61,22 @@ const fim = (l: LinhaParcelas) => vencimentoParcela(l.vencimento, l.tipo, l.quan
 
 function Contrato() {
   const s = useStore((x) => x);
-  const [id, setId] = useState(s.propostas[0]?.id ?? "");
+  const search = Route.useSearch();
+  const navigate = useNavigate();
+  const [id, setId] = useState(search.id ?? s.propostas[0]?.id ?? "");
   const [modalidade, setModalidade] = useState<Modalidade>("rateio");
   const p = s.propostas.find((x) => x.id === id) ?? s.propostas[0];
+  const impresso = useRef(false);
+  useEffect(() => {
+    if (!search.imprimir || impresso.current || !p) return;
+    impresso.current = true;
+    // Pequena espera para o A4 estar pintado antes de abrir a impressão.
+    setTimeout(() => {
+      window.print();
+      // Tira a flag da URL para um F5 não reabrir a impressão sozinho.
+      navigate({ to: "/contrato", search: { id: p.id, imprimir: false }, replace: true });
+    }, 350);
+  }, [search.imprimir, p, navigate]);
   if (!p) return <PageHeader title="Contrato" subtitle="Cadastre uma proposta primeiro." />;
   const { emp, parts, res } = rateioDaProposta(s, p);
   const imob = s.membros.find((m) => m.funcao === "Imobiliária");
