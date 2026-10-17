@@ -181,7 +181,7 @@ function Ficha() {
     try {
       const base64 = await new Promise<string>((ok, err) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] ?? ""); r.onerror = err; r.readAsDataURL(f); });
       const out = await extrair({ data: { filename: f.name, mime: mime.startsWith("image/") ? f.type : mime, base64, tipoDoc: tipo } });
-      if (!out.ok) { toast.error(out.erro); return; }
+      if (!out.ok) { toast.error(out.erro); return false; }
       const d = out.dados;
       const isProp = tipo === "Proposta";
       const nc: Record<string, number> = {};
