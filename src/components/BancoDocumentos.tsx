@@ -1,14 +1,15 @@
 import { useRef, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { Download, Eye, FileText, Loader2, Trash2, Upload } from "lucide-react";
+import { Download, Eye, FileText, Loader2, Sparkles, Trash2, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Btn, Card, Input, Select } from "./kit";
 import { abrirDocumento, chaveDocumentos, excluirDocumento, listarDocumentos, type DocumentoLocal, type DocumentoSalvo } from "@/lib/documentos";
 import { TIPOS_DOCUMENTO } from "@/lib/documentos-regras";
 
-export function BancoDocumentos({ propostaId, salva, locais, onAdd, onOpen, onRemove, disabled }: {
+export function BancoDocumentos({ propostaId, salva, locais, onAdd, onOpen, onRemove, disabled, extraindo, onExtrair }: {
   propostaId: string; salva: boolean; locais: DocumentoLocal[]; disabled: boolean;
   onAdd: (files: File[], tipo: string) => void; onOpen: (doc: DocumentoLocal) => void; onRemove: (id: string) => void;
+  extraindo?: boolean; onExtrair?: () => void;
 }) {
   const [tipo, setTipo] = useState("Documento adicional");
   const [busca, setBusca] = useState("");
@@ -43,6 +44,7 @@ export function BancoDocumentos({ propostaId, salva, locais, onAdd, onOpen, onRe
       <div className="flex flex-wrap gap-2">
         <Select aria-label="Tipo do documento para arquivar" value={tipo} onChange={(e) => setTipo(e.target.value)} className="min-w-0 flex-1">{TIPOS_DOCUMENTO.map((t) => <option key={t}>{t}</option>)}</Select>
         <Btn variant="outline" disabled={disabled} onClick={() => input.current?.click()}><Upload className="h-4 w-4" />Anexar</Btn>
+        {onExtrair && <Btn variant="outline" disabled={disabled || extraindo} title="Extrair os dados dos documentos do banco para preencher a ficha" onClick={onExtrair}>{extraindo ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}{extraindo ? "Extraindo..." : "Extrair dados"}</Btn>}
         <input ref={input} type="file" aria-label="Anexar documentos à proposta" className="hidden" multiple accept=".pdf,.txt,image/png,image/jpeg,image/webp,image/gif" onChange={(e) => { onAdd(Array.from(e.target.files ?? []), tipo); e.target.value = ""; }} />
       </div>
       <Input aria-label="Buscar documento" placeholder="Buscar documento..." value={busca} onChange={(e) => setBusca(e.target.value)} />

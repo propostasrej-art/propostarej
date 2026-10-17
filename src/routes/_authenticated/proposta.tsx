@@ -95,8 +95,12 @@ function Ficha() {
   }
   const manterDocumentos = useRef(false);
   const [ocr, setOcr] = useState<string | null>(null);
+  const [extraindo, setExtraindo] = useState(false);
   const extrair = useServerFn(extrairProposta);
   const [conf, setConf] = useState<Record<string, number>>({});
+  // Sempre com a ficha mais recente, para extrações em sequência (banco de documentos).
+  const pRef = useRef(p);
+  useEffect(() => { pRef.current = p; }, [p]);
   const [docs, setDocs] = useState<Doc[]>([]);
   const [docAtivo, setDocAtivo] = useState<string | null>(null);
   const [origem, setOrigem] = useState<Record<string, string>>({});
@@ -172,11 +176,16 @@ function Ficha() {
     const docId = uid();
     // Archive the original upload even when AI extraction fails.
     setDocs((ds) => [...ds, { id: docId, slot, tipo, file: f0, trechos: {}, rotulos: {} }]);
-    setOcr(slot);
+    await extrairArquivo(docId, f, tipo);
+  }
+  // Extrai os dados de um arquivo (recém-enviado ou já guardado no banco de documentos) e preenche a ficha.
+  async function extrairArquivo(docId: string, f: File, tipo: string): Promise<boolean> {
+    const mime = tipoDe(f);
+    setOcr(docId);
     try {
       const base64 = await new Promise<string>((ok, err) => { const r = new FileReader(); r.onload = () => ok(String(r.result).split(",")[1] ?? ""); r.onerror = err; r.readAsDataURL(f); });
       const out = await extrair({ data: { filename: f.name, mime: mime.startsWith("image/") ? f.type : mime, base64, tipoDoc: tipo } });
-      if (!out.ok) { toast.error(out.erro); return; }
+      if (!out.ok) { toast.error(out.erro); return false; }
       const d = out.dados;
       const isProp = tipo === "Proposta";
       const nc: Record<string, number> = {};
@@ -196,7 +205,7 @@ function Ficha() {
       }
       // Casa cada comprador extraído com um existente (CPF ou nome), senão usa o 1º vazio / novo
       const dig = (v: string) => v.replace(/\D/g, "");
-      const compr = p.compradores.map((c) => ({ ...c }));
+      const compr = pRef.current.compradores.map((c) => ({ ...c }));
       d.compradores.forEach((c, n) => {
         let i = compr.findIndex((x) => (dig(c.cpf) && dig(x.cpf) === dig(c.cpf)) || (c.nome && x.nome.trim().toLowerCase() === c.nome.trim().toLowerCase()));
         if (i < 0) i = !isProp && n === 0 ? 0 : compr.findIndex((x) => !x.nome && !x.cpf);
@@ -218,7 +227,10 @@ function Ficha() {
       if (naoAchados.length) toast.info(`Não encontrados na Equipe: ${naoAchados.join(", ")}.`);
       setConf((c) => ({ ...c, ...nc }));
       setOrigem((o) => ({ ...o, ...Object.fromEntries(Object.keys(tr).map((k) => [k, docId])) }));
-      setDocs((ds) => ds.map((x) => x.id === docId ? { ...x, trechos: tr, rotulos: rot } : x));
+      // Documentos vindos do banco entram no estado local para guardar trechos e alimentar o visualizador.
+      setDocs((ds) => ds.some((x) => x.id === docId)
+        ? ds.map((x) => x.id === docId ? { ...x, trechos: tr, rotulos: rot } : x)
+        : [...ds, { id: docId, slot: tipo, tipo, file: f, trechos: tr, rotulos: rot, salvo: true }]);
       setDocAtivo(docId); setAtivo(null);
       setP((cur) => ({
         ...cur,
@@ -236,9 +248,30 @@ function Ficha() {
       const np = pendentes(nc).length;
       if (np) toast.warning(`${tipo}: dados extraídos de "${f.name}". ${np} campo(s) precisam de revisão.`);
       else toast.success(`${tipo}: dados extraídos de "${f.name}".`);
+      return true;
     } catch {
       toast.error("Não foi possível processar o arquivo.");
+      return false;
     } finally { setOcr(null); }
+  }
+  // Reextrai os dados de todos os documentos do banco (salvos e pendentes) para preencher a ficha.
+  async function extrairBanco() {
+    if (!id) { toast.warning("Salve a proposta para usar os documentos do banco."); return; }
+    setExtraindo(true);
+    try {
+      const salvos = await listarDocumentos(p.id);
+      const pendentesDocs = docs.filter((d) => !d.salvo && !salvos.some((x) => x.id === d.id));
+      const itens: { id: string; tipo: string; file: File }[] = [];
+      for (const d of [...salvos].reverse()) {
+        try { const l = await abrirDocumento(d); itens.push({ id: d.id, tipo: d.tipo, file: l.file }); }
+        catch { toast.error(`Não foi possível abrir "${d.nome}".`); }
+      }
+      for (const d of pendentesDocs) itens.push({ id: d.id, tipo: d.tipo, file: d.file });
+      if (!itens.length) { toast.info("Nenhum documento no banco desta proposta."); return; }
+      let okN = 0;
+      for (const it of itens) if (await extrairArquivo(it.id, it.file, it.tipo)) okN++;
+      toast.success(`Extração concluída: ${okN} de ${itens.length} documento(s) processados.`);
+    } finally { setExtraindo(false); }
   }
   const slots = [...SLOTS_FIXOS.map((t) => ({ slot: t, tipo: t, extra: false })), ...extras.map((e, i) => ({ slot: e, tipo: `Documento adicional ${i + 1}`, extra: true }))];
   const removerDoc = (docId: string) => {
@@ -349,7 +382,7 @@ function Ficha() {
           </Card>
         </div>
         <div className="space-y-6">
-          <BancoDocumentos propostaId={p.id} salva={s.propostas.some((x) => x.id === p.id)} locais={docs} disabled={salvando || !!ocr}
+          <BancoDocumentos propostaId={p.id} salva={s.propostas.some((x) => x.id === p.id)} locais={docs} disabled={salvando || !!ocr} extraindo={extraindo} onExtrair={extrairBanco}
             onAdd={(files, tipo) => {
               const novos: Doc[] = [];
               for (const file of files) {
@@ -365,7 +398,7 @@ function Ficha() {
             <div className="space-y-2">
               {slots.map(({ slot, tipo, extra }) => {
                 const d = [...docs].reverse().find((x) => x.slot === slot);
-                const lendo = ocr === slot;
+                const lendo = ocr === slot || (!!d && ocr === d.id);
                 return (
                   <div key={slot} onDragOver={(e) => { e.preventDefault(); setSobre(slot); }} onDragLeave={() => setSobre((x) => (x === slot ? null : x))}
                     onDrop={(e) => { e.preventDefault(); setSobre(null); if (!ocr) onFile(e.dataTransfer.files?.[0], extra ? "Documento adicional" : tipo, slot); }}
