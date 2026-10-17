@@ -255,6 +255,7 @@ function Ficha() {
             revisar={(id) => revisar(`p:${id}`)} indicador={(id) => conf[`p:${id}`] === undefined ? null : L("", `p:${id}`)}
             destaque={(ids) => ids.some((id) => { const c = conf[`p:${id}`]; return c !== undefined && nivel(c) === "baixa" && precisaRevisao(c); }) ? "bg-destructive/5" : ids.some((id) => precisaRevisao(conf[`p:${id}`])) ? "bg-warn/10" : ""} />
           {(() => { const { res } = rateioDaProposta(s, p); const totalLiquido = res.eventos.reduce((a, e) => a + e.liquidaFluxo, 0);
+            const comissaoDeduzida = res.eventos.reduce((a, e) => a + e.pool, 0); const precoImovel = somaParcelas(p);
             return (
               <Card title="Tabela de valor líquido do imóvel">
                 <div className="overflow-x-auto"><table className="w-full min-w-[560px]"><thead><tr>
@@ -277,12 +278,20 @@ function Ficha() {
                     );
                   })}
                   {!res.eventos.length && <tr><td colSpan={6} className="py-6 text-center text-sm text-muted-foreground">Nenhuma parcela cadastrada.</td></tr>}
-                </tbody><tfoot><tr>
-                  <td colSpan={4} className="px-3 pt-4 text-right text-sm font-semibold">Total</td>
-                  <td className="px-3 pt-4"><Mono className="whitespace-nowrap font-semibold">{brl(res.eventos.reduce((a, e) => a + e.pool, 0))}</Mono></td>
-                  <td className="px-3 pt-4"><Mono className="whitespace-nowrap font-semibold">{brl(res.eventos.reduce((a, e) => a + e.pool, 0))}</Mono></td>
-                  <td className="px-3 pt-4"><Mono className="whitespace-nowrap font-semibold text-success">{brl(totalLiquido)}</Mono></td>
-                </tr></tfoot></table></div>
+                </tbody><tfoot>
+                  <tr className="border-t-2 border-border">
+                    <td colSpan={4} className="px-3 pt-4 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Preço do imóvel</td>
+                    <td colSpan={2} className="px-3 pt-4 text-right"><Mono className="whitespace-nowrap text-sm font-bold">{brl(precoImovel)}</Mono></td>
+                  </tr>
+                  <tr>
+                    <td colSpan={4} className="px-3 py-1 text-right text-xs font-semibold uppercase tracking-wider text-muted-foreground">Comissão deduzida</td>
+                    <td colSpan={2} className="px-3 py-1 text-right"><Mono className="whitespace-nowrap text-sm font-bold text-destructive">– {brl(comissaoDeduzida)}</Mono></td>
+                  </tr>
+                  <tr className="bg-success/5">
+                    <td colSpan={4} className="px-3 pb-3 text-right text-xs font-bold uppercase tracking-wider text-success-foreground">Valor líquido</td>
+                    <td colSpan={2} className="px-3 pb-3 text-right"><Mono className="whitespace-nowrap text-base font-bold text-success">{brl(totalLiquido)}</Mono></td>
+                  </tr>
+                </tfoot></table></div>
                 <p className="mt-3 text-xs text-muted-foreground">Parcelas protegidas (Financiamento Bancário, FGTS, Subsídio) não deduzem comissão; o líquido delas é o valor integral.</p>
               </Card>
             ); })()}
