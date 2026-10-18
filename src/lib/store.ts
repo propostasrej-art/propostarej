@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import type { Retencao, TipoParcela } from "./rateio";
+import type { Modalidade, Retencao, TipoParcela } from "./rateio";
 import type { TipoParcelaCadastro } from "./tipos-parcela";
 
 export type Status = "Em Análise" | "Aprovada" | "Escriturada";

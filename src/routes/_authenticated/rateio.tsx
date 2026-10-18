@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Download, CalendarDays, Printer, ShieldCheck } from "lucide-react";
-import { Btn, Card, Field, Input, Mono, PageHeader, Td, Th } from "@/components/kit";
+import { Btn, Card, Field, Input, Mono, PageHeader, Select, Td, Th } from "@/components/kit";
 import { PropostaPicker } from "@/components/PropostaPicker";
 import { CredenciaisTable } from "@/components/CredenciaisTable";
 import { setState, useStore } from "@/lib/store";
-import { PROTEGIDAS } from "@/lib/rateio";
+import { ehProtegida, MODALIDADES, NOME_TIER, type Modalidade } from "@/lib/rateio";
 import { nomesTiposParcela } from "@/lib/tipos-parcela";
 import { brl, download, dt, pct } from "@/lib/format";
 import { comissaoPct, meta, rateioDaProposta } from "@/lib/helpers";
@@ -60,7 +60,7 @@ function Rateio() {
         </Card>
         <Card title={`Retenção por parcela — ${emp?.nome ?? ""}`} className="lg:col-span-2">
           <div className="grid gap-3 sm:grid-cols-4">{nomesTiposParcela(s.tiposParcela, p.parcelas.map((parcela) => parcela.tipo)).map((t) => {
-            const prot = PROTEGIDAS.includes(t);
+            const prot = ehProtegida(t);
             return <Field key={t} label={`${t}${prot ? " 🔒" : ""}`}><Input type="number" disabled={prot} className="font-mono" value={prot ? 0 : emp?.retencao[t] ?? 0} onChange={(e) => setRet(t, +e.target.value)} /></Field>;
           })}</div>
           <p className="mt-3 text-xs text-muted-foreground">Financiamento Bancário, FGTS e Subsídio são protegidas e nunca deduzem comissão.</p>
@@ -76,7 +76,7 @@ function Rateio() {
 
       <Card title="Cronograma de rateio (evento a evento)" className="mt-6">
         <div className="overflow-x-auto"><table className="w-full"><thead><tr><Th>Vencimento</Th><Th>Tipo</Th><Th>Parcela</Th><Th>Comissão</Th>{parts.map((x) => <Th key={x.id}>{x.nome.split(" ")[0] ?? x.nome}</Th>)}<Th>Acumulado</Th><Th>Fluxo incorporador</Th></tr></thead><tbody>
-          {eventosComissao.map((e) => (<tr key={e.parcela.id} className={PROTEGIDAS.includes(e.parcela.tipo) ? "bg-muted/50" : ""}>
+          {eventosComissao.map((e) => (<tr key={e.parcela.id} className={ehProtegida(e.parcela.tipo) ? "bg-muted/50" : ""}>
             <Td><Mono>{dt(e.parcela.vencimento)}</Mono></Td><Td>{e.parcela.tipo}</Td><Td><Mono>{brl(e.parcela.valor)}</Mono></Td><Td><Mono className="text-success">{brl(e.pool)}</Mono></Td>
             {parts.map((x) => <Td key={x.id}><Mono>{e.pagamentos[x.id] ? brl(e.pagamentos[x.id]) : "—"}</Mono></Td>)}
             <Td><Mono>{brl(e.acumuladoTotal)}</Mono></Td><Td><Mono>{brl(e.liquidaFluxo)}</Mono></Td></tr>))}
@@ -89,7 +89,7 @@ function Rateio() {
           <div className="space-y-3 text-sm">
             <div className="flex items-center gap-2 font-semibold text-primary"><ShieldCheck className="h-4 w-4" />Memória de cálculo</div>
             <p>Comissão total = VGV <Mono>{brl(p.vgv)}</Mono> × <Mono>{pct(comissaoPct(p))}</Mono> = <Mono className="text-success">{brl(res.totalComissao)}</Mono>.</p>
-            <p>Foram processadas <Mono>{res.eventos.length}</Mono> parcelas; <Mono>{eventosComissao.length}</Mono> geraram dedução de comissão e <Mono>{res.eventos.filter((e) => PROTEGIDAS.includes(e.parcela.tipo)).length}</Mono> são protegidas.</p>
+            <p>Foram processadas <Mono>{res.eventos.length}</Mono> parcelas; <Mono>{eventosComissao.length}</Mono> geraram dedução de comissão e <Mono>{res.eventos.filter((e) => ehProtegida(e.parcela.tipo)).length}</Mono> são protegidas.</p>
             <ul className="list-disc pl-5">{parts.map((x) => <li key={x.id}>{x.nome}: teto <Mono>{brl(res.tetos[x.id])}</Mono>, quitado em <Mono>{dt(res.quitacao[x.id])}</Mono></li>)}</ul>
             <p>Excedentes de participantes quitados foram redistribuídos em cascata aos remanescentes (soma zero).</p>
             <div className={`rounded-lg p-3 font-medium ${res.liberacao ? "bg-success/10 text-success" : "bg-warn/15 text-warn-foreground"}`}>

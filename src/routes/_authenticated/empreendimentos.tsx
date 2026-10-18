@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Btn, Card, Field, Input, Mono, PageHeader } from "@/components/kit";
 import { setState, useStore, type Empreendimento } from "@/lib/store";
-import { PROTEGIDAS, RETENCAO_PADRAO } from "@/lib/rateio";
+import { ehProtegida, RETENCAO_PADRAO } from "@/lib/rateio";
 import { nomesTiposParcela } from "@/lib/tipos-parcela";
 import { pct, uid } from "@/lib/format";
 import { meta } from "@/lib/helpers";
@@ -32,7 +32,7 @@ function Emps() {
           </div>
           <div className="mt-4 text-xs font-semibold uppercase text-muted-foreground">Retenção de comissão por tipo de parcela (%)</div>
           <div className="mt-2 grid gap-3 sm:grid-cols-4">{tipos.map((t) => (
-            <Field key={t} label={t}><Input type="number" className="font-mono" disabled={PROTEGIDAS.includes(t)} value={PROTEGIDAS.includes(t) ? 0 : edit.retencao[t] ?? 0} onChange={(e) => setEdit({ ...edit, retencao: { ...edit.retencao, [t]: +e.target.value } })} /></Field>))}</div>
+            <Field key={t} label={t}><Input type="number" className="font-mono" disabled={ehProtegida(t)} value={ehProtegida(t) ? 0 : edit.retencao[t] ?? 0} onChange={(e) => setEdit({ ...edit, retencao: { ...edit.retencao, [t]: +e.target.value } })} /></Field>))}</div>
           <div className="mt-4 flex gap-2"><Btn onClick={save}>Salvar</Btn><Btn variant="outline" onClick={() => setEdit(null)}>Cancelar</Btn></div>
         </Card>
       )}
