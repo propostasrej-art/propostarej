@@ -4,6 +4,12 @@ export const COLUNAS_MEMBROS = ["Nome", "Apelido", "CPF/CNPJ", "CRECI", "Telefon
 export const FUNCOES_MEMBROS: Funcao[] = ["Corretor", "Gerente", "Diretor Comercial", "Jurídico", "Imobiliária"];
 export type MembroImportado = Omit<Membro, "id">;
 export interface LinhaMembro { linha: number; membro: MembroImportado; erros: string[] }
+export function separarLinhasMembros(linhas: LinhaMembro[]) {
+  return {
+    validas: linhas.filter((linha) => linha.erros.length === 0),
+    pendentes: linhas.filter((linha) => linha.erros.length > 0),
+  };
+}
 const normalizar = (s: string) => s.trim().normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 const documento = (s: string) => s.replace(/\D/g, "");
 

@@ -1,8 +1,21 @@
 import { describe, expect, it } from "vitest";
-import { COLUNAS_MEMBROS, validarPlanilhaMembros } from "../lib/importar-membros";
+import { COLUNAS_MEMBROS, separarLinhasMembros, validarPlanilhaMembros } from "../lib/importar-membros";
 
 const linha = ["Ana Silva", "Ana", "01234567890", "12345", "11987654321", "ana@exemplo.com", "Corretor"];
 describe("Importação em massa de membros", () => {
+  it("permite importar membros válidos mesmo com erros em outras linhas", () => {
+    const resultado = validarPlanilhaMembros([COLUNAS_MEMBROS, linha, ["", "", "", "", "", "invalido", "Admin"]], []);
+    const { validas, pendentes } = separarLinhasMembros(resultado);
+    expect(validas.map((l) => l.membro.nome)).toEqual(["Ana Silva"]);
+    expect(pendentes.map((l) => l.linha)).toEqual([3]);
+    expect(pendentes[0]?.erros).toHaveLength(3);
+  });
+  it("não reimporta membros já cadastrados durante uma confirmação parcial", () => {
+    const existente = { id: "existente", nome: "Ana Silva", apelido: "Ana", doc: "01234567890", creci: "12345", telefone: "11987654321", email: "ana@exemplo.com", funcao: "Corretor" as const };
+    const resultado = validarPlanilhaMembros([COLUNAS_MEMBROS, linha, ["João", "", "", "", "", "joao@exemplo.com", "Gerente"]], [existente]);
+    expect(separarLinhasMembros(resultado).validas.map((l) => l.membro.nome)).toEqual(["João"]);
+    expect(separarLinhasMembros(resultado).pendentes[0]?.membro.nome).toBe("Ana Silva");
+  });
   it("converte todos os campos sem perder zeros e preserva vários membros", () => {
     const resultado = validarPlanilhaMembros([COLUNAS_MEMBROS, linha, ["João", "", "", "", "", "joao@exemplo.com", "Gerente"]], []);
     expect(resultado).toHaveLength(2);
