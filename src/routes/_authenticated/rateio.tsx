@@ -29,6 +29,11 @@ function Rateio() {
     setState((st) => ({ ...st, propostas: st.propostas.map((x) => (x.id === p.id ? { ...x, participantes: x.participantes.map((y) => (y.membroId === membroId ? { ...y, pct: v } : y)) } : x)) }));
   const setAtoFull = (membroId: string, v: boolean) =>
     setState((st) => ({ ...st, propostas: st.propostas.map((x) => (x.id === p.id ? { ...x, participantes: x.participantes.map((y) => (y.membroId === membroId ? { ...y, atoFull: v } : y)) } : x)) }));
+  const setOcultar = (membroId: string, v: boolean) =>
+    setState((st) => ({ ...st, propostas: st.propostas.map((x) => (x.id === p.id ? { ...x, participantes: x.participantes.map((y) => (y.membroId === membroId ? { ...y, ocultar: v } : y)) } : x)) }));
+  const upP = (patch: Partial<typeof p>) => setState((st) => ({ ...st, propostas: st.propostas.map((x) => (x.id === p.id ? { ...x, ...patch } : x)) }));
+  const cargos = [...new Set(parts.map((x) => x.cargo).filter(Boolean))] as string[];
+  const bruto = (id: string) => p.participantes.find((y) => y.membroId === id)?.pct ?? 0;
   const setModalidade = (v: Modalidade) =>
     setState((st) => ({ ...st, propostas: st.propostas.map((x) => (x.id === p.id ? { ...x, modalidade: v } : x)) }));
   const nomeDe = (id: string) => parts.find((x) => x.id === id)?.nome ?? id;
@@ -61,7 +66,13 @@ function Rateio() {
           <div className="space-y-2">{parts.map((x) => (
             <div key={x.id} className="flex items-center justify-between gap-2"><span className="text-sm">{x.nome} <span className="text-xs text-muted-foreground">({x.funcao} · Tier {x.tier})</span>
                 <label className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground"><input type="checkbox" checked={x.atoFull} onChange={(e) => setAtoFull(x.id, e.target.checked)} />Ato integral (prioridade)</label></span>
-              <Input type="number" step="0.1" className="w-24 font-mono" value={x.pct} onChange={(e) => setPct(x.id, +e.target.value)} /></div>))}
+              <div className="text-right"><Input type="number" step="0.1" className="w-24 font-mono" disabled={x.cargo != null && p.pctPorCargo?.[x.cargo] != null} value={bruto(x.id)} onChange={(e) => setPct(x.id, +e.target.value)} />
+                <div className="text-xs text-muted-foreground">efetiva <Mono>{pct(x.pct)}</Mono></div>
+                {x.funcao !== "Imobiliária" && <label className="flex items-center justify-end gap-1 text-xs text-muted-foreground"><input type="checkbox" checked={x.ocultar} onChange={(e) => setOcultar(x.id, e.target.checked)} />Ocultar no contrato</label>}</div></div>))}
+            <div className="border-t pt-2"><Field label="Taxa da proposta (%) — vazio usa a soma"><Input type="number" step="0.1" className="font-mono" value={p.taxaComissao ?? ""} onChange={(e) => upP({ taxaComissao: e.target.value === "" ? undefined : +e.target.value })} /></Field></div>
+            {cargos.length > 0 && <div className="space-y-1"><div className="text-xs font-semibold uppercase text-muted-foreground">% por cargo (dividida entre os profissionais)</div>
+              {cargos.map((cg) => <div key={cg} className="flex items-center justify-between gap-2"><span className="text-sm">{cg} <span className="text-xs text-muted-foreground">({parts.filter((x) => x.cargo === cg).length})</span></span>
+                <Input type="number" step="0.1" placeholder="individual" className="w-28 font-mono" value={p.pctPorCargo?.[cg] ?? ""} onChange={(e) => { const n = { ...(p.pctPorCargo ?? {}) }; if (e.target.value === "") delete n[cg]; else n[cg] = +e.target.value; upP({ pctPorCargo: n }); }} /></div>)}</div>}
             <div className="border-t pt-2 text-sm">Comissão global: <Mono className="font-semibold text-success">{pct(comissaoPct(p))}</Mono> = <Mono className="text-success">{brl(res.totalComissao)}</Mono></div>
           </div>
         </Card>

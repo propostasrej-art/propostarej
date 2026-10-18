@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { calcularRateio, RETENCAO_PADRAO } from "@/lib/rateio";
+import { ajustarAliquotas, calcularRateio, RETENCAO_PADRAO } from "@/lib/rateio";
 
 const parts = [{ id: "c", nome: "Corretor", pct: 3 }, { id: "g", nome: "Gerente", pct: 2 }];
 
@@ -53,5 +53,16 @@ describe("manual de rateio (waterfall)", () => {
   it("centavos dos tetos vão para a intermediadora", () => {
     const r = calcularRateio(100_000.01, [{ id: "a", nome: "A", pct: 2.5 }, { id: "b", nome: "B", pct: 2.5, intermediadora: true }], [], RETENCAO_PADRAO);
     expect(r.tetos["a"]! + r.tetos["b"]!).toBe(r.totalComissao);
+  });
+});
+
+describe("ajuste de alíquotas (etapa 1)", () => {
+  it("divide a % do cargo entre os profissionais", () => {
+    const r = ajustarAliquotas([{ pct: 1, cargo: "Corretor" }, { pct: 9, cargo: "Corretor" }, { pct: 1, cargo: "Gerente" }], { pctPorCargo: { Corretor: 4 } });
+    expect(r.map((x) => x.pct)).toEqual([2, 2, 1]);
+  });
+  it("escala proporcionalmente à taxa da proposta", () => {
+    const r = ajustarAliquotas([{ pct: 3 }, { pct: 1 }], { taxa: 6 });
+    expect(r.map((x) => x.pct)).toEqual([4.5, 1.5]);
   });
 });

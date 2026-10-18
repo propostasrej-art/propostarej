@@ -161,3 +161,25 @@ export function calcularRateio(vgv: number, participantes: ParticipanteIn[], par
   participantes.forEach((p) => { tetos[p.id] = r(tetosC[p.id]!); pagos[p.id] = r(pagosC[p.id]!); });
   return { totalComissao: r(totalC), tetos, pagos, eventos, quitacao, liberacao, saldoPendente: r(totalC - acumulado), modalidade };
 }
+
+export interface AjusteAliquotas {
+  /** % total por cargo, dividida igualmente entre os profissionais daquele cargo (Etapa 1). */
+  pctPorCargo?: Partial<Record<string, number>> | undefined;
+  /** Taxa global da proposta; se diferir da soma, as alíquotas são escaladas proporcionalmente. */
+  taxa?: number | undefined;
+}
+/** Etapa 1 do manual: divisão por cargo e escalonamento proporcional à taxa da proposta. */
+export function ajustarAliquotas<T extends { pct: number; cargo?: string | undefined }>(parts: T[], aj: AjusteAliquotas = {}): T[] {
+  const cont: Record<string, number> = {};
+  parts.forEach((p) => { if (p.cargo) cont[p.cargo] = (cont[p.cargo] ?? 0) + 1; });
+  let out = parts.map((p) => {
+    const v = p.cargo ? aj.pctPorCargo?.[p.cargo] : undefined;
+    return v != null && Number.isFinite(v) ? { ...p, pct: v / cont[p.cargo!]! } : { ...p };
+  });
+  const soma = out.reduce((a, p) => a + p.pct, 0);
+  if (aj.taxa != null && aj.taxa > 0 && soma > 0 && Math.abs(soma - aj.taxa) > 1e-9) {
+    const k = aj.taxa / soma;
+    out = out.map((p) => ({ ...p, pct: p.pct * k }));
+  }
+  return out;
+}
