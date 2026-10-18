@@ -372,8 +372,12 @@ function Ficha() {
             <div className="space-y-2">
               {p.participantes.map((x, i) => (
                 <div key={i} className="flex gap-2">
-                  <Select value={x.membroId} onChange={(e) => up({ participantes: p.participantes.map((y, j) => (j === i ? { ...y, membroId: e.target.value } : y)) })}>
-                    {s.membros.map((m) => <option key={m.id} value={m.id}>{m.nome} — {m.funcao}</option>)}</Select>
+                  <MembroPicker
+                    membros={s.membros}
+                    value={x.membroId}
+                    invalid={!s.membros.some((m) => m.id === x.membroId)}
+                    onChange={(id) => up({ participantes: p.participantes.map((y, j) => (j === i ? { ...y, membroId: id } : y)) })}
+                  />
                   <Input type="number" step="0.1" className="w-28 font-mono" value={x.pct} onChange={(e) => up({ participantes: p.participantes.map((y, j) => (j === i ? { ...y, pct: +e.target.value } : y)) })} />
                   <Btn variant="danger" onClick={() => up({ participantes: p.participantes.filter((_, j) => j !== i) })}><Trash2 className="h-4 w-4" /></Btn>
                 </div>
