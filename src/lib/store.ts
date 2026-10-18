@@ -11,7 +11,7 @@ export interface Parcela { id: string; tipo: TipoParcela; valor: number; vencime
 export interface Participacao { membroId: string; pct: number; atoFull?: boolean; ocultar?: boolean }
 export interface Proposta {
   id: string; status: Status; empreendimentoId: string; unidade: string; torre: string; vaga: string; vgv: number;
-  compradores: Comprador[]; parcelas: Parcela[]; participantes: Participacao[]; createdAt: string; modalidade?: Modalidade; taxaComissao?: number; pctPorCargo?: Partial<Record<string, number>>;
+  compradores: Comprador[]; parcelas: Parcela[]; participantes: Participacao[]; createdAt: string; modalidade?: Modalidade; taxaComissao?: number | undefined; pctPorCargo?: Partial<Record<string, number>>;
 }
 export interface Empreendimento { id: string; nome: string; endereco: string; construtora: string; honorariosPct: number; retencao: Retencao }
 export interface Membro { id: string; nome: string; apelido: string; doc: string; creci: string; telefone: string; email?: string; funcao: Funcao }
