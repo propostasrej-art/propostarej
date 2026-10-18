@@ -3,6 +3,7 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Plus, Trash2, Upload, Save, CheckCircle2, AlertTriangle } from "lucide-react";
 import { toast } from "sonner";
 import { Btn, Card, Field, Input, Mono, PageHeader, Select, Td, Th } from "@/components/kit";
+import { MembroPicker } from "@/components/MembroPicker";
 import { ParcelasTable } from "@/components/ParcelasTable";
 import { getState, setState, useStore, type Proposta, type State, type Status } from "@/lib/store";
 import { nomesTiposParcela } from "@/lib/tipos-parcela";
@@ -221,7 +222,7 @@ function Ficha() {
       });
       // Equipe de vendas: cruza nomes com o cadastro de Equipe
       const norm = (v: string) => v.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
-      const acha = (n: string) => { const x = norm(n); return x ? s.membros.find((m) => norm(m.nome).includes(x) || x.includes(norm(m.nome)) || (m.apelido && norm(m.apelido) === x)) : undefined; };
+      const acha = (n: string) => { const x = norm(n); return x ? s.membros.find((m) => m.apelido && (norm(m.apelido) === x || norm(m.apelido).includes(x) || x.includes(norm(m.apelido)))) ?? s.membros.find((m) => norm(m.nome).includes(x) || x.includes(norm(m.nome))) : undefined; };
       const equipe = isProp && d.equipe ? [d.equipe.corretor1, d.equipe.corretor2, d.equipe.gerente].map(acha).filter((m): m is NonNullable<typeof m> => !!m) : [];
       const naoAchados = isProp && d.equipe ? [d.equipe.corretor1, d.equipe.corretor2, d.equipe.gerente].filter((n) => n && !acha(n)) : [];
       if (naoAchados.length) toast.info(`Não encontrados na Equipe: ${naoAchados.join(", ")}.`);
@@ -367,12 +368,16 @@ function Ficha() {
                 <p className="mt-3 text-xs text-muted-foreground">Parcelas protegidas (Financiamento Bancário, FGTS, Subsídio) não deduzem comissão; o líquido delas é o valor integral.</p>
               </Card>
             ); })()}
-          <Card title="Participantes do rateio (% sobre VGV)" action={<Btn variant="ghost" onClick={() => up({ participantes: [...p.participantes, { membroId: s.membros[0]?.id ?? "", pct: 1 }] })}><Plus className="h-4 w-4" />Participante</Btn>}>
+          <Card title="Participantes do rateio (% sobre VGV)" action={<Btn variant="ghost" onClick={() => up({ participantes: [...p.participantes, { membroId: "", pct: 1 }] })}><Plus className="h-4 w-4" />Participante</Btn>}>
             <div className="space-y-2">
               {p.participantes.map((x, i) => (
                 <div key={i} className="flex gap-2">
-                  <Select value={x.membroId} onChange={(e) => up({ participantes: p.participantes.map((y, j) => (j === i ? { ...y, membroId: e.target.value } : y)) })}>
-                    {s.membros.map((m) => <option key={m.id} value={m.id}>{m.nome} — {m.funcao}</option>)}</Select>
+                  <MembroPicker
+                    membros={s.membros}
+                    value={x.membroId}
+                    invalid={!s.membros.some((m) => m.id === x.membroId)}
+                    onChange={(id) => up({ participantes: p.participantes.map((y, j) => (j === i ? { ...y, membroId: id } : y)) })}
+                  />
                   <Input type="number" step="0.1" className="w-28 font-mono" value={x.pct} onChange={(e) => up({ participantes: p.participantes.map((y, j) => (j === i ? { ...y, pct: +e.target.value } : y)) })} />
                   <Btn variant="danger" onClick={() => up({ participantes: p.participantes.filter((_, j) => j !== i) })}><Trash2 className="h-4 w-4" /></Btn>
                 </div>
