@@ -34,7 +34,7 @@ export interface ParticipanteIn {
   /** Recebe os centavos de equalização dos tetos (Imobiliária Intermediadora). */
   intermediadora?: boolean;
 }
-export interface OpcoesRateio { modalidade?: Modalidade }
+export interface OpcoesRateio { modalidade?: Modalidade | undefined }
 
 export interface Transbordo { tier: Tier; valor: number }
 export interface EventoRateio {
