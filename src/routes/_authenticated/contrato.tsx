@@ -93,12 +93,19 @@ function Contrato() {
   const benef = new Map<string, { m: Membro; cargos: Set<string>; valor: number }>();
   p.participantes.forEach((x) => {
     const m = s.membros.find((mm) => mm.id === x.membroId);
-    if (!m || m.funcao === "Imobiliária" || !((res.tetos[x.membroId] ?? 0) > 0)) return;
+    if (!m || m.funcao === "Imobiliária" || x.ocultar || !((res.tetos[x.membroId] ?? 0) > 0)) return;
     const b = benef.get(m.id) ?? { m, cargos: new Set<string>(), valor: 0 };
     b.cargos.add(m.funcao); b.valor = res.tetos[x.membroId] ?? 0; benef.set(m.id, b);
   });
   const lista = [...benef.values()];
-  const totalBenef = r2(lista.reduce((a, b) => a + b.valor, 0));
+  // hideAndSum: cargos ocultos são consolidados na linha da Imobiliária Intermediadora
+  const consolidados = parts.filter((x) => x.ocultar || x.funcao === "Imobiliária").map((x) => x.id);
+  const valorImob = r2(consolidados.reduce((a, id) => a + (res.tetos[id] ?? 0), 0));
+  const totalBenef = r2(lista.reduce((a, b) => a + b.valor, 0) + valorImob);
+  const colImob = consolidados.length ? [{ id: "__imob", nome: imob?.nome ?? "Imobiliária" }] : [];
+  const partsPub = [...parts.filter((x) => !consolidados.includes(x.id)), ...colImob];
+  const pagoEv = (e: (typeof res.eventos)[number], id: string) => id === "__imob" ? r2(consolidados.reduce((a, c) => a + (e.pagamentos[c] ?? 0), 0)) : e.pagamentos[id] ?? 0;
+  const pagoTot = (id: string) => id === "__imob" ? r2(consolidados.reduce((a, c) => a + (res.pagos[c] ?? 0), 0)) : res.pagos[id] ?? 0;
 
   const dataExtenso = new Date().toLocaleDateString("pt-BR", { day: "numeric", month: "long", year: "numeric" });
   const enviar = () => {
@@ -178,16 +185,16 @@ function Contrato() {
 
           <h2>7 - Das comissões por beneficiário (Anexo I de honorários)</h2>
           <Tab right={[3]} head={["Apelido", "Nome", "Cargo", "Valor (R$)"]}
-            rows={lista.map((b) => [b.m.apelido, b.m.nome, [...b.cargos].join(", "), <M>{brl(b.valor)}</M>])}
+            rows={[...lista.map((b) => [b.m.apelido, b.m.nome, [...b.cargos].join(", "), <M>{brl(b.valor)}</M>]), ...(valorImob > 0 ? [[imob?.apelido ?? "—", imob?.nome ?? "Imobiliária", "Imobiliária Intermediadora", <M>{brl(valorImob)}</M>]] : [])]}
             foot={["", "Total (100%)", "", <M>{brl(totalBenef)}</M>]} />
 
           <div className="mt-3 text-[10px] font-bold uppercase">Tabela 4 - Cronograma de rateio (evento a evento)</div>
-          <Tab right={[0, 2, 3, ...Array.from({ length: parts.length + 2 }, (_, i) => 4 + i)]}
-            head={["Vencimento", "Tipo", "Parcela", "Comissão", ...parts.map((x) => x.nome.split(" ")[0] ?? x.nome), "Acumulado", "Fluxo incorporador"]}
+          <Tab right={[0, 2, 3, ...Array.from({ length: partsPub.length + 2 }, (_, i) => 4 + i)]}
+            head={["Vencimento", "Tipo", "Parcela", "Comissão", ...partsPub.map((x) => x.nome.split(" ")[0] ?? x.nome), "Acumulado", "Fluxo incorporador"]}
             rows={cron.map((e) => [<M>{dt(e.parcela.vencimento)}</M>, e.parcela.tipo, <M>{brl(e.parcela.valor)}</M>, <M>{brl(e.pool)}</M>,
-              ...parts.map((x) => <M>{e.pagamentos[x.id] ? brl(e.pagamentos[x.id]) : "—"}</M>),
+              ...partsPub.map((x) => <M>{pagoEv(e, x.id) ? brl(pagoEv(e, x.id)) : "—"}</M>),
               <M>{brl(e.acumuladoTotal)}</M>, <M>{brl(e.liquidaFluxo)}</M>])}
-            foot={["", "Total", "", <M>{brl(cron.reduce((a, e) => a + e.pool, 0))}</M>, ...parts.map((x) => <M>{brl(res.pagos[x.id] ?? 0)}</M>), "", ""]} />
+            foot={["", "Total", "", <M>{brl(cron.reduce((a, e) => a + e.pool, 0))}</M>, ...partsPub.map((x) => <M>{brl(pagoTot(x.id))}</M>), "", ""]} />
 
           <h2>8 - Assinaturas e fechamento</h2>
           <p>_______________________ - ___, {dataExtenso}.</p>
