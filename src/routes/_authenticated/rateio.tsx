@@ -1,9 +1,10 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Download, CalendarDays, Printer, ShieldCheck } from "lucide-react";
+import { Download, CalendarDays, Printer, ShieldCheck, Trash2, Plus } from "lucide-react";
 import { Btn, Card, Field, Input, Mono, PageHeader, Select, Td, Th } from "@/components/kit";
 import { PropostaPicker } from "@/components/PropostaPicker";
 import { CredenciaisTable } from "@/components/CredenciaisTable";
+import { MembroPicker } from "@/components/MembroPicker";
 import { setState, useStore } from "@/lib/store";
 import { ehProtegida, MODALIDADES, NOME_TIER, type Modalidade } from "@/lib/rateio";
 import { nomesTiposParcela } from "@/lib/tipos-parcela";
@@ -61,36 +62,30 @@ function Rateio() {
       <div className="hidden print:block mb-4"><h1 className="text-xl font-bold">Rateio de Comissões — {emp?.nome} · Unidade {p.unidade}</h1></div>
 
       <div className="grid gap-6 lg:grid-cols-3 print:hidden">
-        <Card title="Alíquotas por cargo (% sobre VGV)" className="lg:col-span-3">
-          <div className="overflow-x-auto"><table className="w-full"><thead><tr><Th>Cargo</Th><Th>Apelido(s)</Th><Th className="text-right">Taxa</Th><Th className="text-right">Prêmio</Th><Th className="text-right">Proporção</Th><Th className="text-right">Qtd. beneficiários</Th></tr></thead><tbody>
-            {[...new Set(parts.map((x) => x.cargo ?? "Sem cargo"))].map((cg) => {
-              const grupo = parts.filter((x) => (x.cargo ?? "Sem cargo") === cg);
-              const taxa = grupo.reduce((a, x) => a + x.pct, 0);
-              const premio = grupo.reduce((a, x) => a + (res.tetos[x.id] ?? 0), 0);
-              const prop = res.totalComissao > 0 ? (premio / res.totalComissao) * 100 : 0;
-              const temCargo = cg !== "Sem cargo";
-              return <tr key={cg} className="align-top">
-                <Td className="font-medium">{cg}</Td>
-                <Td><div className="space-y-2">{grupo.map((x) => {
-                  const m = s.membros.find((mm) => mm.id === x.id);
-                  return <div key={x.id} className="flex flex-wrap items-center gap-2">
-                    <span className="text-sm">{m?.apelido || x.nome}</span>
-                    <Input type="number" step="0.1" aria-label={`% de ${x.nome}`} className="h-8 w-20 font-mono" disabled={temCargo && p.pctPorCargo?.[cg] != null} value={bruto(x.id)} onChange={(e) => setPct(x.id, +e.target.value)} />
-                    <span className="text-xs text-muted-foreground">efetiva <Mono>{pct(x.pct)}</Mono> · Tier {x.tier}</span>
-                    <label className="flex items-center gap-1 text-xs text-muted-foreground"><input type="checkbox" checked={x.atoFull} onChange={(e) => setAtoFull(x.id, e.target.checked)} />Ato integral</label>
-                    {x.funcao !== "Imobiliária" && <label className="flex items-center gap-1 text-xs text-muted-foreground"><input type="checkbox" checked={x.ocultar} onChange={(e) => setOcultar(x.id, e.target.checked)} />Ocultar no contrato</label>}
-                  </div>;
-                })}</div></Td>
-                <Td className="text-right">{temCargo
-                  ? <Input type="number" step="0.1" aria-label={`Taxa do cargo ${cg}`} placeholder={taxa.toFixed(2)} className="ml-auto h-8 w-24 font-mono" value={p.pctPorCargo?.[cg] ?? ""} onChange={(e) => { const n = { ...(p.pctPorCargo ?? {}) }; if (e.target.value === "") delete n[cg]; else n[cg] = +e.target.value; upP({ pctPorCargo: n }); }} />
-                  : <Mono>{pct(taxa)}</Mono>}
-                  <div className="text-xs text-muted-foreground">efetiva <Mono>{pct(taxa)}</Mono></div></Td>
-                <Td className="text-right"><Mono className="text-success">{brl(premio)}</Mono></Td>
-                <Td className="text-right"><Mono>{pct(prop)}</Mono></Td>
-                <Td className="text-right"><Mono>{grupo.length}</Mono></Td>
+        <Card title="Alíquotas" className="lg:col-span-3">
+          <div className="overflow-x-auto"><table className="w-full"><thead><tr><Th>Cargo</Th><Th>Apelido</Th><Th className="text-right">Comissão (% VGV)</Th><Th className="text-right">Prêmio (% VGV)</Th><Th className="text-right">Proporção (% parcela)</Th><Th></Th></tr></thead><tbody>
+            {p.participantes.map((y, i) => {
+              const m = s.membros.find((mm) => mm.id === y.membroId);
+              const x = parts.find((pp) => pp.id === y.membroId);
+              const upI = (patch: Partial<typeof y>) => upP({ participantes: p.participantes.map((z, j) => (j === i ? { ...z, ...patch } : z)) });
+              const num = (v: string) => (v === "" ? undefined : +v);
+              return <tr key={i} className="align-top">
+                <Td><Input aria-label="Cargo" className="h-9 w-44" placeholder={m?.funcao ?? "Cargo"} value={y.cargo ?? ""} onChange={(e) => upI({ cargo: e.target.value })} /></Td>
+                <Td><div className="w-64"><MembroPicker membros={s.membros} value={y.membroId} onChange={(id) => upI({ membroId: id })} invalid={!m} /></div>
+                  {x && <div className="mt-1 flex flex-wrap gap-3 text-xs text-muted-foreground">
+                    <label className="flex items-center gap-1"><input type="checkbox" checked={x.atoFull} onChange={(e) => upI({ atoFull: e.target.checked })} />Ato integral</label>
+                    {x.funcao !== "Imobiliária" && <label className="flex items-center gap-1"><input type="checkbox" checked={x.ocultar} onChange={(e) => upI({ ocultar: e.target.checked })} />Ocultar no contrato</label>}
+                  </div>}</Td>
+                <Td className="text-right"><Input type="number" step="0.01" aria-label="Comissão" className="ml-auto h-9 w-24 text-right font-mono" value={y.pct} onChange={(e) => upI({ pct: +e.target.value })} />
+                  {x && <div className="text-xs text-muted-foreground">efetiva <Mono>{pct(x.pct)}</Mono> · <Mono className="text-success">{brl(res.tetos[x.id])}</Mono></div>}</Td>
+                <Td className="text-right"><Input type="number" step="0.01" aria-label="Prêmio" className="ml-auto h-9 w-24 text-right font-mono" value={y.premio ?? ""} onChange={(e) => upI({ premio: num(e.target.value) })} />
+                  {y.premio != null && <div className="text-xs text-muted-foreground"><Mono className="text-success">{brl((p.vgv * y.premio) / 100)}</Mono></div>}</Td>
+                <Td className="text-right"><Input type="number" step="0.01" aria-label="Proporção" className="ml-auto h-9 w-24 text-right font-mono" value={y.proporcao ?? ""} onChange={(e) => upI({ proporcao: num(e.target.value) })} /></Td>
+                <Td><Btn variant="ghost" aria-label="Remover" onClick={() => upP({ participantes: p.participantes.filter((_, j) => j !== i) })}><Trash2 className="h-4 w-4" /></Btn></Td>
               </tr>;
             })}
           </tbody></table></div>
+          <Btn variant="outline" className="mt-2" onClick={() => upP({ participantes: [...p.participantes, { membroId: "", pct: 1 }] })}><Plus className="h-4 w-4" />Adicionar linha</Btn>
           <div className="mt-3 flex flex-wrap items-end justify-between gap-4 border-t pt-3">
             <Field label="Taxa da proposta (%) — vazio usa a soma"><Input type="number" step="0.1" className="w-40 font-mono" value={p.taxaComissao ?? ""} onChange={(e) => upP({ taxaComissao: e.target.value === "" ? undefined : +e.target.value })} /></Field>
             <div className="text-sm">Comissão global: <Mono className="font-semibold text-success">{pct(comissaoPct(p))}</Mono> = <Mono className="text-success">{brl(res.totalComissao)}</Mono></div>
