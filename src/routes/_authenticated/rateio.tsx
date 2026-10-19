@@ -32,7 +32,6 @@ function Rateio() {
   const setOcultar = (membroId: string, v: boolean) =>
     setState((st) => ({ ...st, propostas: st.propostas.map((x) => (x.id === p.id ? { ...x, participantes: x.participantes.map((y) => (y.membroId === membroId ? { ...y, ocultar: v } : y)) } : x)) }));
   const upP = (patch: Partial<typeof p>) => setState((st) => ({ ...st, propostas: st.propostas.map((x) => (x.id === p.id ? { ...x, ...patch } : x)) }));
-  const cargos = [...new Set(parts.map((x) => x.cargo).filter(Boolean))] as string[];
   const bruto = (id: string) => p.participantes.find((y) => y.membroId === id)?.pct ?? 0;
   const setModalidade = (v: Modalidade) =>
     setState((st) => ({ ...st, propostas: st.propostas.map((x) => (x.id === p.id ? { ...x, modalidade: v } : x)) }));
