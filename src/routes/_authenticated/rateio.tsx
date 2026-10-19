@@ -62,21 +62,42 @@ function Rateio() {
       <div className="hidden print:block mb-4"><h1 className="text-xl font-bold">Rateio de Comissões — {emp?.nome} · Unidade {p.unidade}</h1></div>
 
       <div className="grid gap-6 lg:grid-cols-3 print:hidden">
-        <Card title="Alíquotas (% sobre VGV)">
-          <div className="space-y-2">{parts.map((x) => (
-            <div key={x.id} className="flex items-center justify-between gap-2"><span className="text-sm">{x.nome} <span className="text-xs text-muted-foreground">({x.funcao} · Tier {x.tier})</span>
-                <label className="mt-0.5 flex items-center gap-1 text-xs text-muted-foreground"><input type="checkbox" checked={x.atoFull} onChange={(e) => setAtoFull(x.id, e.target.checked)} />Ato integral (prioridade)</label></span>
-              <div className="text-right"><Input type="number" step="0.1" className="w-24 font-mono" disabled={x.cargo != null && p.pctPorCargo?.[x.cargo] != null} value={bruto(x.id)} onChange={(e) => setPct(x.id, +e.target.value)} />
-                <div className="text-xs text-muted-foreground">efetiva <Mono>{pct(x.pct)}</Mono></div>
-                {x.funcao !== "Imobiliária" && <label className="flex items-center justify-end gap-1 text-xs text-muted-foreground"><input type="checkbox" checked={x.ocultar} onChange={(e) => setOcultar(x.id, e.target.checked)} />Ocultar no contrato</label>}</div></div>))}
-            <div className="border-t pt-2"><Field label="Taxa da proposta (%) — vazio usa a soma"><Input type="number" step="0.1" className="font-mono" value={p.taxaComissao ?? ""} onChange={(e) => upP({ taxaComissao: e.target.value === "" ? undefined : +e.target.value })} /></Field></div>
-            {cargos.length > 0 && <div className="space-y-1"><div className="text-xs font-semibold uppercase text-muted-foreground">% por cargo (dividida entre os profissionais)</div>
-              {cargos.map((cg) => <div key={cg} className="flex items-center justify-between gap-2"><span className="text-sm">{cg} <span className="text-xs text-muted-foreground">({parts.filter((x) => x.cargo === cg).length})</span></span>
-                <Input type="number" step="0.1" placeholder="individual" className="w-28 font-mono" value={p.pctPorCargo?.[cg] ?? ""} onChange={(e) => { const n = { ...(p.pctPorCargo ?? {}) }; if (e.target.value === "") delete n[cg]; else n[cg] = +e.target.value; upP({ pctPorCargo: n }); }} /></div>)}</div>}
-            <div className="border-t pt-2 text-sm">Comissão global: <Mono className="font-semibold text-success">{pct(comissaoPct(p))}</Mono> = <Mono className="text-success">{brl(res.totalComissao)}</Mono></div>
+        <Card title="Alíquotas por cargo (% sobre VGV)" className="lg:col-span-3">
+          <div className="overflow-x-auto"><table className="w-full"><thead><tr><Th>Cargo</Th><Th>Apelido(s)</Th><Th className="text-right">Taxa</Th><Th className="text-right">Prêmio</Th><Th className="text-right">Proporção</Th><Th className="text-right">Qtd. beneficiários</Th></tr></thead><tbody>
+            {[...new Set(parts.map((x) => x.cargo ?? "Sem cargo"))].map((cg) => {
+              const grupo = parts.filter((x) => (x.cargo ?? "Sem cargo") === cg);
+              const taxa = grupo.reduce((a, x) => a + x.pct, 0);
+              const premio = grupo.reduce((a, x) => a + (res.tetos[x.id] ?? 0), 0);
+              const prop = res.totalComissao > 0 ? (premio / res.totalComissao) * 100 : 0;
+              const temCargo = cg !== "Sem cargo";
+              return <tr key={cg} className="align-top">
+                <Td className="font-medium">{cg}</Td>
+                <Td><div className="space-y-2">{grupo.map((x) => {
+                  const m = s.membros.find((mm) => mm.id === x.id);
+                  return <div key={x.id} className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm">{m?.apelido || x.nome}</span>
+                    <Input type="number" step="0.1" aria-label={`% de ${x.nome}`} className="h-8 w-20 font-mono" disabled={temCargo && p.pctPorCargo?.[cg] != null} value={bruto(x.id)} onChange={(e) => setPct(x.id, +e.target.value)} />
+                    <span className="text-xs text-muted-foreground">efetiva <Mono>{pct(x.pct)}</Mono> · Tier {x.tier}</span>
+                    <label className="flex items-center gap-1 text-xs text-muted-foreground"><input type="checkbox" checked={x.atoFull} onChange={(e) => setAtoFull(x.id, e.target.checked)} />Ato integral</label>
+                    {x.funcao !== "Imobiliária" && <label className="flex items-center gap-1 text-xs text-muted-foreground"><input type="checkbox" checked={x.ocultar} onChange={(e) => setOcultar(x.id, e.target.checked)} />Ocultar no contrato</label>}
+                  </div>;
+                })}</div></Td>
+                <Td className="text-right">{temCargo
+                  ? <Input type="number" step="0.1" aria-label={`Taxa do cargo ${cg}`} placeholder={taxa.toFixed(2)} className="ml-auto h-8 w-24 font-mono" value={p.pctPorCargo?.[cg] ?? ""} onChange={(e) => { const n = { ...(p.pctPorCargo ?? {}) }; if (e.target.value === "") delete n[cg]; else n[cg] = +e.target.value; upP({ pctPorCargo: n }); }} />
+                  : <Mono>{pct(taxa)}</Mono>}
+                  <div className="text-xs text-muted-foreground">efetiva <Mono>{pct(taxa)}</Mono></div></Td>
+                <Td className="text-right"><Mono className="text-success">{brl(premio)}</Mono></Td>
+                <Td className="text-right"><Mono>{pct(prop)}</Mono></Td>
+                <Td className="text-right"><Mono>{grupo.length}</Mono></Td>
+              </tr>;
+            })}
+          </tbody></table></div>
+          <div className="mt-3 flex flex-wrap items-end justify-between gap-4 border-t pt-3">
+            <Field label="Taxa da proposta (%) — vazio usa a soma"><Input type="number" step="0.1" className="w-40 font-mono" value={p.taxaComissao ?? ""} onChange={(e) => upP({ taxaComissao: e.target.value === "" ? undefined : +e.target.value })} /></Field>
+            <div className="text-sm">Comissão global: <Mono className="font-semibold text-success">{pct(comissaoPct(p))}</Mono> = <Mono className="text-success">{brl(res.totalComissao)}</Mono></div>
           </div>
         </Card>
-        <Card title={`Retenção por parcela — ${emp?.nome ?? ""}`} className="lg:col-span-2">
+        <Card title={`Retenção por parcela — ${emp?.nome ?? ""}`} className="lg:col-span-3">
           <div className="grid gap-3 sm:grid-cols-4">{nomesTiposParcela(s.tiposParcela, p.parcelas.map((parcela) => parcela.tipo)).map((t) => {
             const prot = ehProtegida(t);
             return <Field key={t} label={`${t}${prot ? " 🔒" : ""}`}><Input type="number" disabled={prot} className="font-mono" value={prot ? 0 : emp?.retencao[t] ?? 0} onChange={(e) => setRet(t, +e.target.value)} /></Field>;
