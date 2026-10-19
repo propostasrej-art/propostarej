@@ -14,7 +14,9 @@ export function rateioDaProposta(s: State, p: Proposta) {
       tier: tierDaFuncao(m?.funcao), atoFull: x.atoFull ?? m?.funcao === "Jurídico", intermediadora: m?.funcao === "Imobiliária",
     };
   });
-  const parts = ajustarAliquotas(brutos, { pctPorCargo: p.pctPorCargo, taxa: p.taxaComissao });
+  // Prêmio (% do VGV) soma-se à comissão já ajustada de cada participante.
+  const parts = ajustarAliquotas(brutos, { pctPorCargo: p.pctPorCargo, taxa: p.taxaComissao })
+    .map((x, i) => ({ ...x, pct: x.pct + (Number(p.participantes[i]?.premio) || 0) }));
   return { emp, parts, res: calcularRateio(p.vgv, parts, p.parcelas, emp?.retencao ?? RETENCAO_PADRAO, { modalidade: p.modalidade }) };
 }
 export const comissaoPct = (p: Proposta) => (p.taxaComissao && p.taxaComissao > 0 && p.participantes.length ? p.taxaComissao : p.participantes.reduce((a, b) => a + b.pct, 0));
