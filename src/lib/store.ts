@@ -8,7 +8,7 @@ export type Status = "Em Análise" | "Aprovada" | "Escriturada";
 export type Funcao = "Corretor" | "Gerente" | "Diretor Comercial" | "Jurídico" | "Imobiliária";
 export interface Comprador { nome: string; cpf: string; rg: string; endereco: string; conjuge: string; nascimento?: string; estadoCivil?: string; profissao?: string; nacionalidade?: string; email?: string; telefone?: string }
 export interface Parcela { id: string; tipo: TipoParcela; valor: number; vencimento: string }
-export interface Participacao { membroId: string; pct: number; atoFull?: boolean; ocultar?: boolean }
+export interface Participacao { membroId: string; pct: number; atoFull?: boolean; ocultar?: boolean; cargo?: string; premio?: number; proporcao?: number }
 export interface Proposta {
   id: string; status: Status; empreendimentoId: string; unidade: string; torre: string; vaga: string; vgv: number;
   compradores: Comprador[]; parcelas: Parcela[]; participantes: Participacao[]; createdAt: string; modalidade?: Modalidade; taxaComissao?: number | undefined; pctPorCargo?: Partial<Record<string, number>>;

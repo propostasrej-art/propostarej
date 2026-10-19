@@ -10,7 +10,7 @@ export function rateioDaProposta(s: State, p: Proposta) {
   const brutos = p.participantes.map((x) => {
     const m = s.membros.find((mm) => mm.id === x.membroId);
     return {
-      id: x.membroId, nome: m?.nome ?? "?", pct: x.pct, funcao: m?.funcao, cargo: m?.funcao as string | undefined, ocultar: !!x.ocultar && m?.funcao !== "Imobiliária",
+      id: x.membroId, nome: m?.nome ?? "?", pct: x.pct, funcao: m?.funcao, cargo: (x.cargo?.trim() || m?.funcao) as string | undefined, ocultar: !!x.ocultar && m?.funcao !== "Imobiliária",
       tier: tierDaFuncao(m?.funcao), atoFull: x.atoFull ?? m?.funcao === "Jurídico", intermediadora: m?.funcao === "Imobiliária",
     };
   });
