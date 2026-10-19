@@ -30,7 +30,7 @@ function Rateio() {
   const keyDe = (y: (typeof p.participantes)[number]) => (y.cargo?.trim() || s.membros.find((mm) => mm.id === y.membroId)?.funcao || "") as string;
   // A Comissão informada é a % total do cargo, dividida igualmente entre os participantes dele.
   const setPctCargo = (i: number, v: number) => {
-    const key = keyDe(p.participantes[i]);
+    const key = keyDe(p.participantes[i]!);
     if (!key) { upP({ participantes: p.participantes.map((z, j) => (j === i ? { ...z, pct: v } : z)) }); return; }
     const grupo = p.participantes.filter((z) => keyDe(z) === key);
     upP({
@@ -39,7 +39,7 @@ function Rateio() {
     });
   };
   const setCargo = (i: number, v: string) => {
-    const y = p.participantes[i];
+    const y = p.participantes[i]!;
     const oldKey = keyDe(y);
     let partes = p.participantes.map((z, j) => (j === i ? { ...z, cargo: v } : z));
     const pctPor = { ...(p.pctPorCargo ?? {}) };
@@ -62,7 +62,7 @@ function Rateio() {
     upP({ participantes: partes, pctPorCargo: pctPor });
   };
   const addAoCargo = (i: number) => {
-    const y = p.participantes[i];
+    const y = p.participantes[i]!;
     const key = keyDe(y);
     if (!key) { upP({ participantes: [...p.participantes, { membroId: "", pct: 1 }] }); return; }
     const grupo = p.participantes.filter((z) => keyDe(z) === key);
@@ -75,7 +75,7 @@ function Rateio() {
     });
   };
   const remPart = (i: number) => {
-    const y = p.participantes[i];
+    const y = p.participantes[i]!;
     const key = keyDe(y);
     const restantes = p.participantes.filter((_, j) => j !== i);
     if (!key) { upP({ participantes: restantes }); return; }
